@@ -4,7 +4,11 @@
  */
 
 // --- HTTP Server ---
-export const PORT = 3777;
+export const PORT = Number(process.env.PORT) || 3777;
+export const HOST = process.env.HOST ?? "0.0.0.0";
+export const ALLOWED_ORIGINS = process.env.CASHCLAW_ALLOWED_ORIGINS
+  ? process.env.CASHCLAW_ALLOWED_ORIGINS.split(",").map((s) => s.trim())
+  : null; // null = derive from request (localhost or fly.io hostname)
 export const MAX_BODY_BYTES = 1_048_576; // 1 MB
 
 // --- Rate Limiting ---

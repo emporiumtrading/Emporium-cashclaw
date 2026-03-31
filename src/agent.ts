@@ -16,6 +16,8 @@ import { loadChat, clearChat } from "./memory/chat.js";
 import type { CashClawConfig } from "./config.js";
 import {
   PORT,
+  HOST,
+  ALLOWED_ORIGINS,
   MAX_BODY_BYTES,
 } from "./constants.js";
 import { requireMethod } from "./utils.js";
@@ -102,10 +104,22 @@ export async function startAgent(): Promise<http.Server> {
   return server;
 }
 
+function getAllowedOrigin(req: http.IncomingMessage): string {
+  // If explicitly configured, validate against the list
+  if (ALLOWED_ORIGINS) {
+    const origin = req.headers.origin;
+    if (origin && ALLOWED_ORIGINS.includes(origin)) return origin;
+    return ALLOWED_ORIGINS[0];
+  }
+  // Default: derive from request origin or fall back to localhost
+  const origin = req.headers.origin;
+  if (origin) return origin;
+  return `http://localhost:${PORT}`;
+}
+
 function createServer(ctx: ServerContext): http.Server {
   const server = http.createServer((req, res) => {
-    // Restrict CORS to same-origin only — prevents cross-site request forgery
-    const allowedOrigin = `http://localhost:${PORT}`;
+    const allowedOrigin = getAllowedOrigin(req);
     res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -116,7 +130,7 @@ function createServer(ctx: ServerContext): http.Server {
       return;
     }
 
-    const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
+    const url = new URL(req.url ?? "/", `http://${req.headers.host ?? `localhost:${PORT}`}`);
 
     // Apply rate limiting to API endpoints
     if (url.pathname.startsWith("/api/")) {
@@ -128,8 +142,8 @@ function createServer(ctx: ServerContext): http.Server {
     serveStatic(url.pathname, res);
   });
 
-  server.listen(PORT, () => {
-    log.info(`Dashboard: http://localhost:${PORT}`);
+  server.listen(PORT, HOST, () => {
+    log.info(`Dashboard: http://${HOST}:${PORT}`);
   });
 
   return server;

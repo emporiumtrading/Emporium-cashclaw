@@ -1,0 +1,44 @@
+# fly.toml — https://fly.io/docs/reference/configuration/
+
+app = "cashclaw"
+primary_region = "iad"
+
+[build]
+
+[env]
+  NODE_ENV = "production"
+  HOST = "0.0.0.0"
+
+# CashClaw listens on 3777
+[[services]]
+  internal_port = 3777
+  protocol = "tcp"
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 100
+    soft_limit = 80
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [[services.http_checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/api/setup/status"
+
+# Persistent volume for ~/.cashclaw config, knowledge, feedback, logs
+[mounts]
+  source = "cashclaw_data"
+  destination = "/data"

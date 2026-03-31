@@ -1,0 +1,12 @@
+node_modules
+dist
+.git
+.gitignore
+*.md
+test
+assets
+.prettierrc
+eslint.config.js
+vitest.config.ts
+REVIEW.md
+ARCHITECTURE.md
