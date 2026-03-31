@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { getConfigDir } from "../config.js";
+import { MAX_FEEDBACK_ENTRIES } from "../constants.js";
 
 export interface FeedbackEntry {
   taskId: string;
@@ -10,8 +11,6 @@ export interface FeedbackEntry {
   comments: string;
   timestamp: number;
 }
-
-const MAX_ENTRIES = 100;
 
 function getFeedbackPath(): string {
   return path.join(getConfigDir(), "feedback.json");
@@ -52,7 +51,7 @@ export function storeFeedback(entry: FeedbackEntry): void {
   const entries = loadFeedback();
   entries.push(entry);
 
-  const trimmed = entries.slice(-MAX_ENTRIES);
+  const trimmed = entries.slice(-MAX_FEEDBACK_ENTRIES);
   cache = trimmed;
 
   const p = getFeedbackPath();

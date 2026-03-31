@@ -1,11 +1,9 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { Tool, ToolResult } from "./types.js";
+import { AGENTCASH_FETCH_TIMEOUT_MS, AGENTCASH_BALANCE_TIMEOUT_MS } from "../constants.js";
 
 const execFileAsync = promisify(execFile);
-
-const FETCH_TIMEOUT = 60_000;
-const BALANCE_TIMEOUT = 15_000;
 
 const ALLOWED_DOMAINS = new Set([
   "stableenrich.dev",
@@ -94,7 +92,7 @@ export const agentcashFetch: Tool = {
     args.push("--format", "json");
 
     try {
-      const result = await runAgentCash<unknown>(args, FETCH_TIMEOUT);
+      const result = await runAgentCash<unknown>(args, AGENTCASH_FETCH_TIMEOUT_MS);
       return { success: true, data: JSON.stringify(result, null, 2) };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -125,7 +123,7 @@ export const agentcashBalance: Tool = {
     try {
       const result = await runAgentCash<AgentCashWalletInfo>(
         ["wallet", "info", "--format", "json"],
-        BALANCE_TIMEOUT,
+        AGENTCASH_BALANCE_TIMEOUT_MS,
       );
       return {
         success: true,

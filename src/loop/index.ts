@@ -5,8 +5,7 @@ import type { ToolContext } from "../tools/types.js";
 import { getToolDefinitions, executeTool } from "../tools/registry.js";
 import { buildSystemPrompt } from "./prompt.js";
 import { buildTaskContext } from "./context.js";
-
-const DEFAULT_MAX_TURNS = 10;
+import { DEFAULT_MAX_TURNS } from "../constants.js";
 
 export interface ToolCallRecord {
   name: string;

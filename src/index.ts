@@ -1,7 +1,10 @@
 import { startAgent } from "./agent.js";
+import { createLogger } from "./logger.js";
+
+const log = createLogger("main");
 
 async function main() {
-  console.log("Starting CashClaw...");
+  log.info("Starting CashClaw...");
 
   const server = await startAgent();
 
@@ -17,7 +20,7 @@ async function main() {
 
   // Graceful shutdown
   const shutdown = () => {
-    console.log("\nShutting down...");
+    log.info("Shutting down...");
     server.close();
     process.exit(0);
   };
@@ -27,6 +30,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(err instanceof Error ? err.message : err);
+  log.error(err instanceof Error ? err.message : String(err));
   process.exit(1);
 });

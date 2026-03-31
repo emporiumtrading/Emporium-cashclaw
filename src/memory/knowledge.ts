@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { getConfigDir } from "../config.js";
+import { MAX_KNOWLEDGE_ENTRIES } from "../constants.js";
 
 export interface KnowledgeEntry {
   id: string;
@@ -11,8 +12,6 @@ export interface KnowledgeEntry {
   source: string;
   timestamp: number;
 }
-
-const MAX_ENTRIES = 50;
 
 function getKnowledgePath(): string {
   return path.join(getConfigDir(), "knowledge.json");
@@ -52,7 +51,7 @@ export function storeKnowledge(entry: KnowledgeEntry): void {
   const entries = loadKnowledge();
   entries.push(entry);
 
-  const trimmed = entries.slice(-MAX_ENTRIES);
+  const trimmed = entries.slice(-MAX_KNOWLEDGE_ENTRIES);
   cache = trimmed;
 
   const p = getKnowledgePath();

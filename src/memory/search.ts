@@ -1,6 +1,7 @@
 import MiniSearch from "minisearch";
 import { loadKnowledge, type KnowledgeEntry } from "./knowledge.js";
 import { loadFeedback, type FeedbackEntry } from "./feedback.js";
+import { DECAY_HALF_LIFE_MS } from "../constants.js";
 
 export interface MemoryHit {
   id: string;
@@ -11,8 +12,6 @@ export interface MemoryHit {
   meta: KnowledgeEntry | FeedbackEntry;
 }
 
-// Temporal decay: half-life of 30 days
-const DECAY_HALF_LIFE_MS = 30 * 24 * 60 * 60 * 1000;
 const DECAY_LAMBDA = Math.LN2 / DECAY_HALF_LIFE_MS;
 
 interface IndexDoc {

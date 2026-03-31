@@ -6,6 +6,8 @@ import {
   storeKnowledge,
   type KnowledgeEntry,
 } from "../memory/knowledge.js";
+import { MAX_STUDY_TURNS } from "../constants.js";
+import { extractText } from "../utils.js";
 
 export interface StudyResult {
   topic: KnowledgeEntry["topic"];
@@ -18,8 +20,6 @@ const STUDY_TOPICS: KnowledgeEntry["topic"][] = [
   "specialty_research",
   "task_simulation",
 ];
-
-const MAX_STUDY_TURNS = 3;
 
 /** Pick the next topic by rotating through the list based on past entries */
 function pickTopic(existing: KnowledgeEntry[], feedback: FeedbackEntry[]): KnowledgeEntry["topic"] {
@@ -139,10 +139,7 @@ export async function runStudySession(
     const response = await llm.chat(messages);
     totalTokens += response.usage.inputTokens + response.usage.outputTokens;
 
-    const textBlocks = response.content.filter(
-      (b): b is { type: "text"; text: string } => b.type === "text",
-    );
-    lastText = textBlocks.map((b) => b.text).join("\n");
+    lastText = extractText(response.content);
 
     // Single turn is usually enough for study sessions
     if (response.stopReason === "end_turn") break;

@@ -7,6 +7,17 @@ import { runAgentLoop, type LoopResult } from "./loop/index.js";
 import { runStudySession } from "./loop/study.js";
 import { storeFeedback } from "./memory/feedback.js";
 import { appendLog } from "./memory/log.js";
+import {
+  MOLTLAUNCH_WS_URL,
+  WS_INITIAL_RECONNECT_MS,
+  WS_MAX_RECONNECT_MS,
+  WS_POLL_INTERVAL_MS,
+  TASK_EXPIRY_MS,
+  MAX_EVENTS,
+} from "./constants.js";
+import { createLogger } from "./logger.js";
+
+const hbLog = createLogger("heartbeat");
 
 export interface HeartbeatState {
   running: boolean;
@@ -33,13 +44,6 @@ const TERMINAL_STATUSES = new Set([
   "completed", "declined", "cancelled", "expired", "resolved", "disputed",
 ]);
 
-const WS_URL = "wss://api.moltlaunch.com/ws";
-const WS_INITIAL_RECONNECT_MS = 5_000;
-const WS_MAX_RECONNECT_MS = 300_000; // 5 min cap
-// When WS is connected, poll infrequently as a sync check
-const WS_POLL_INTERVAL_MS = 120_000;
-// Expire non-terminal tasks after 7 days to prevent memory leaks
-const TASK_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function createHeartbeat(
   config: CashClawConfig,
@@ -71,8 +75,8 @@ export function createHeartbeat(
   function emit(event: Omit<ActivityEvent, "timestamp">) {
     const full: ActivityEvent = { ...event, timestamp: Date.now() };
     state.events.push(full);
-    if (state.events.length > 200) {
-      state.events = state.events.slice(-200);
+    if (state.events.length > MAX_EVENTS) {
+      state.events = state.events.slice(-MAX_EVENTS);
     }
     for (const fn of listeners) fn(full);
   }
@@ -87,7 +91,7 @@ export function createHeartbeat(
     if (!state.running || !config.agentId) return;
 
     try {
-      ws = new WebSocket(`${WS_URL}/${config.agentId}`);
+      ws = new WebSocket(`${MOLTLAUNCH_WS_URL}/${config.agentId}`);
 
       ws.on("open", () => {
         state.wsConnected = true;

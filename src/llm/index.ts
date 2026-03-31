@@ -7,6 +7,8 @@ import type {
   ContentBlock,
   ToolResultBlock,
 } from "./types.js";
+import { ANTHROPIC_API_URL, OPENAI_API_URL, OPENROUTER_API_URL, LLM_MAX_TOKENS } from "../constants.js";
+import { extractText } from "../utils.js";
 
 export type { LLMProvider, LLMMessage, LLMResponse } from "./types.js";
 
@@ -18,7 +20,7 @@ function createAnthropicProvider(config: LLMConfig): LLMProvider {
 
       const body: Record<string, unknown> = {
         model: config.model,
-        max_tokens: 4096,
+        max_tokens: LLM_MAX_TOKENS,
         system: typeof systemMsg?.content === "string" ? systemMsg.content : undefined,
         messages: nonSystem.map((m) => ({
           role: m.role,
@@ -30,7 +32,7 @@ function createAnthropicProvider(config: LLMConfig): LLMProvider {
         body.tools = tools;
       }
 
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch(`${ANTHROPIC_API_URL}/messages`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -87,10 +89,7 @@ function toOpenAIMessages(
 
     // Assistant message with tool_use blocks
     if (m.role === "assistant" && Array.isArray(m.content)) {
-      const textParts = m.content
-        .filter((b): b is { type: "text"; text: string } => b.type === "text")
-        .map((b) => b.text)
-        .join("");
+      const textParts = extractText(m.content as ContentBlock[]);
 
       const toolCalls = m.content
         .filter((b): b is { type: "tool_use"; id: string; name: string; input: Record<string, unknown> } => b.type === "tool_use")
@@ -149,7 +148,7 @@ function createOpenAICompatibleProvider(
 
       const body: Record<string, unknown> = {
         model: config.model,
-        max_tokens: 4096,
+        max_tokens: LLM_MAX_TOKENS,
         messages: toOpenAIMessages(messages),
       };
 
@@ -227,15 +226,9 @@ export function createLLMProvider(config: LLMConfig): LLMProvider {
     case "anthropic":
       return createAnthropicProvider(config);
     case "openai":
-      return createOpenAICompatibleProvider(
-        config,
-        "https://api.openai.com/v1",
-      );
+      return createOpenAICompatibleProvider(config, OPENAI_API_URL);
     case "openrouter":
-      return createOpenAICompatibleProvider(
-        config,
-        "https://openrouter.ai/api/v1",
-      );
+      return createOpenAICompatibleProvider(config, OPENROUTER_API_URL);
     default:
       throw new Error(`Unknown LLM provider: ${config.provider}`);
   }

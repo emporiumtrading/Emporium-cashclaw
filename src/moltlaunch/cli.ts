@@ -1,12 +1,11 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { Task, Bounty, WalletInfo, RegisterResult, AgentInfo } from "./types.js";
+import { CLI_DEFAULT_TIMEOUT_MS, CLI_REGISTER_TIMEOUT_MS, MOLTLAUNCH_API_URL } from "../constants.js";
 
 const execFileAsync = promisify(execFile);
 
 const MLTL_BIN = "mltl";
-const DEFAULT_TIMEOUT = 30_000;
-const REGISTER_TIMEOUT = 120_000;
 
 interface CliError {
   error: string;
@@ -15,7 +14,7 @@ interface CliError {
 
 async function mltl<T>(
   args: string[],
-  timeout = DEFAULT_TIMEOUT,
+  timeout = CLI_DEFAULT_TIMEOUT_MS,
 ): Promise<T> {
   try {
     // --json is a per-subcommand flag, appended at the end
@@ -93,7 +92,7 @@ export async function registerAgent(opts: RegisterOpts): Promise<RegisterResult>
   if (opts.website) {
     args.push("--website", opts.website);
   }
-  return mltl<RegisterResult>(args, REGISTER_TIMEOUT);
+  return mltl<RegisterResult>(args, CLI_REGISTER_TIMEOUT_MS);
 }
 
 // --- Agent lookup ---
@@ -101,7 +100,7 @@ export async function registerAgent(opts: RegisterOpts): Promise<RegisterResult>
 export async function getAgentByWallet(address: string): Promise<AgentInfo | null> {
   try {
     const res = await fetch(
-      `https://api.moltlaunch.com/api/agents/by-wallet/${address}`,
+      `${MOLTLAUNCH_API_URL}/api/agents/by-wallet/${address}`,
     );
     if (!res.ok) return null;
     const data = (await res.json()) as { agents: Record<string, unknown>[] };

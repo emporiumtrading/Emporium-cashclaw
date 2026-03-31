@@ -2,14 +2,13 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { getConfigDir } from "../config.js";
+import { MAX_CHAT_MESSAGES } from "../constants.js";
 
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   timestamp: number;
 }
-
-const MAX_MESSAGES = 100;
 
 function getChatPath(): string {
   return path.join(getConfigDir(), "chat.json");
@@ -37,7 +36,7 @@ export function appendChat(message: ChatMessage): void {
   const messages = loadChat();
   messages.push(message);
 
-  const trimmed = messages.slice(-MAX_MESSAGES);
+  const trimmed = messages.slice(-MAX_CHAT_MESSAGES);
 
   const p = getChatPath();
   fs.mkdirSync(path.dirname(p), { recursive: true });
