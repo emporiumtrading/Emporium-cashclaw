@@ -217,7 +217,7 @@ export async function handleKnowledgeDelete(
 
 export async function handleWallet(
   res: http.ServerResponse,
-  ctx: ServerContext,
+  _ctx: ServerContext,
 ) {
   try {
     const now = Date.now();
@@ -234,7 +234,7 @@ export async function handleWallet(
 
 export async function handleAgentInfo(
   res: http.ServerResponse,
-  ctx: ServerContext,
+  _ctx: ServerContext,
 ) {
   try {
     const wallet = await cli.walletShow();

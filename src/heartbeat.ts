@@ -15,9 +15,6 @@ import {
   TASK_EXPIRY_MS,
   MAX_EVENTS,
 } from "./constants.js";
-import { createLogger } from "./logger.js";
-
-const hbLog = createLogger("heartbeat");
 
 export interface HeartbeatState {
   running: boolean;

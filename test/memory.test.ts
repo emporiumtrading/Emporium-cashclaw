@@ -50,7 +50,7 @@ describe("knowledge", () => {
   });
 
   it("storeKnowledge persists and can be loaded back", async () => {
-    const { storeKnowledge, loadKnowledge } = await freshImport<KnowledgeMod>("../src/memory/knowledge.js");
+    const { storeKnowledge } = await freshImport<KnowledgeMod>("../src/memory/knowledge.js");
 
     const entry = makeEntry({ id: "k-1", insight: "Type narrowing is powerful" });
     storeKnowledge(entry);
@@ -168,7 +168,7 @@ describe("feedback", () => {
   });
 
   it("storeFeedback persists and can be loaded back", async () => {
-    const { storeFeedback, loadFeedback } = await freshImport<FeedbackMod>("../src/memory/feedback.js");
+    const { storeFeedback } = await freshImport<FeedbackMod>("../src/memory/feedback.js");
 
     const entry = makeFeedback({ taskId: "t-1", score: 5 });
     storeFeedback(entry);
