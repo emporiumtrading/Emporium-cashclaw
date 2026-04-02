@@ -163,17 +163,20 @@ export function App() {
             </div>
           )}
 
-          <div className="flex items-center justify-between pt-1 border-t border-zinc-800/40">
-            <span className="text-[10px] text-zinc-700 font-mono">v0.1.0</span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  api.logout().then(() => setAuthState("login")).catch(() => {});
-                }}
-                className="text-[10px] text-zinc-700 hover:text-zinc-400 transition-colors"
-              >
-                Logout
-              </button>
+          <div className="pt-2 border-t border-zinc-800/40 space-y-2">
+            <button
+              onClick={() => {
+                api.logout().then(() => setAuthState("login")).catch(() => {});
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-md text-[12px] font-medium text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/60 transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3-3h-9m9 0l-3-3m3 3l-3 3" />
+              </svg>
+              Logout
+            </button>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-zinc-700 font-mono">v0.1.0</span>
               <SystemClock />
             </div>
           </div>
