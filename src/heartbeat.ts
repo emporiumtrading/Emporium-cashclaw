@@ -1,5 +1,5 @@
 import WebSocket from "ws";
-import type { CashClawConfig } from "./config.js";
+import type { MelistaConfig } from "./config.js";
 import type { LLMProvider } from "./llm/types.js";
 import type { Task } from "./moltlaunch/types.js";
 import * as cli from "./moltlaunch/cli.js";
@@ -47,7 +47,7 @@ const WS_POLL_INTERVAL_MS = 120_000;
 const TASK_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function createHeartbeat(
-  config: CashClawConfig,
+  config: MelistaConfig,
   llm: LLMProvider,
 ) {
   // Initialise multi-marketplace system

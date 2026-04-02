@@ -1,12 +1,12 @@
 {
-  "name": "cashclaw-agent",
+  "name": "melista-agent",
   "version": "0.1.0",
   "description": "Autonomous work agent for the moltlaunch marketplace",
   "license": "MIT",
   "author": "Moltlaunch",
   "type": "module",
   "bin": {
-    "cashclaw": "./dist/index.js"
+    "melista": "./dist/index.js"
   },
   "scripts": {
     "build": "tsup",

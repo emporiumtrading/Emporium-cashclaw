@@ -1,4 +1,5 @@
 import http from "node:http";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -7,7 +8,7 @@ import {
   savePartialConfig,
   isConfigured,
   isAgentCashAvailable,
-  type CashClawConfig,
+  type MelistaConfig,
   type LLMConfig,
 } from "./config.js";
 import { createLLMProvider } from "./llm/index.js";
@@ -22,11 +23,43 @@ import * as cli from "./moltlaunch/cli.js";
 const PORT = 3777;
 const MAX_BODY_BYTES = 1_048_576; // 1 MB
 
+// --- Auth ---
+const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const activeSessions = new Map<string, { expiresAt: number }>();
+
+function hashPassword(password: string, salt: string): string {
+  return crypto.createHash("sha256").update(password + salt).digest("hex");
+}
+
+function generateToken(): string {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+function isAuthenticated(req: http.IncomingMessage, ctx: ServerContext): boolean {
+  // No auth configured = open access (backward compatible)
+  if (!ctx.config?.auth?.passwordHash) return true;
+
+  const cookie = req.headers.cookie ?? "";
+  const match = cookie.match(/melista_session=([a-f0-9]+)/);
+  if (!match) return false;
+
+  const session = activeSessions.get(match[1]);
+  if (!session || Date.now() > session.expiresAt) {
+    if (session) activeSessions.delete(match[1]);
+    return false;
+  }
+  return true;
+}
+
+function setSessionCookie(res: http.ServerResponse, token: string) {
+  res.setHeader("Set-Cookie", `melista_session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400`);
+}
+
 type ServerMode = "setup" | "running";
 
 interface ServerContext {
   mode: ServerMode;
-  config: CashClawConfig | null;
+  config: MelistaConfig | null;
   heartbeat: Heartbeat | null;
 }
 
@@ -75,7 +108,33 @@ function createServer(ctx: ServerContext): http.Server {
 
     const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
 
+    // Auth endpoints — always accessible
+    if (url.pathname === "/api/auth/login") {
+      handleLogin(req, res, ctx);
+      return;
+    }
+    if (url.pathname === "/api/auth/logout") {
+      handleLogout(req, res);
+      return;
+    }
+    if (url.pathname === "/api/auth/status") {
+      json(res, {
+        authenticated: isAuthenticated(req, ctx),
+        authRequired: Boolean(ctx.config?.auth?.passwordHash),
+      });
+      return;
+    }
+    if (url.pathname === "/api/auth/setup") {
+      handleAuthSetup(req, res, ctx);
+      return;
+    }
+
+    // Protect all other API routes
     if (url.pathname.startsWith("/api/")) {
+      if (!isAuthenticated(req, ctx)) {
+        json(res, { error: "Unauthorized" }, 401);
+        return;
+      }
       handleApi(url.pathname, req, res, ctx);
       return;
     }
@@ -321,7 +380,7 @@ async function handleSetupApi(
           const match = body.image.match(/^data:image\/(\w+);base64,(.+)$/);
           if (match) {
             const ext = match[1] === "jpeg" ? "jpg" : match[1];
-            imagePath = path.join(os.tmpdir(), `cashclaw-image-${Date.now()}.${ext}`);
+            imagePath = path.join(os.tmpdir(), `melista-image-${Date.now()}.${ext}`);
             fs.writeFileSync(imagePath, Buffer.from(match[2], "base64"));
           }
         }
@@ -379,7 +438,7 @@ async function handleSetupApi(
         };
         savePartialConfig({
           specialties: body.specialties,
-          pricing: body.pricing as CashClawConfig["pricing"],
+          pricing: body.pricing as MelistaConfig["pricing"],
           autoQuote: body.autoQuote,
           autoWork: body.autoWork,
           maxConcurrentTasks: body.maxConcurrentTasks,
@@ -444,7 +503,7 @@ async function handleConfigUpdate(
 ) {
   try {
     const body = await readBody(req);
-    const updates = parseJsonBody<Partial<CashClawConfig>>(body);
+    const updates = parseJsonBody<Partial<MelistaConfig>>(body);
 
     if (!ctx.config) {
       json(res, { error: "No config" }, 400);
@@ -664,7 +723,7 @@ async function handleChat(
       ? `\nYour personality: tone=${ctx.config.personality.tone}, style=${ctx.config.personality.responseStyle}.${ctx.config.personality.customInstructions ? ` Custom instructions: ${ctx.config.personality.customInstructions}` : ""}`
       : "";
 
-    const systemPrompt = `You are CashClaw (agent "${ctx.config.agentId}"), an autonomous work agent on the moltlaunch marketplace.
+    const systemPrompt = `You are Melista (agent "${ctx.config.agentId}"), an autonomous work agent on the moltlaunch marketplace.
 Your specialties: ${specialties}. These are your ONLY areas of expertise — always reference these specific skills, never claim to be "general-purpose".
 
 ## Self-awareness
@@ -719,6 +778,85 @@ async function handleKnowledgeDelete(
     json(res, { ok: true });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Invalid request";
+    json(res, { error: msg }, 400);
+  }
+}
+
+// --- Auth handlers ---
+
+async function handleLogin(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  ctx: ServerContext,
+) {
+  if (req.method !== "POST") { json(res, { error: "POST only" }, 405); return; }
+  try {
+    const body = parseJsonBody<{ password: string }>(await readBody(req));
+    if (!body.password) {
+      json(res, { error: "Password required" }, 400);
+      return;
+    }
+
+    if (!ctx.config?.auth?.passwordHash || !ctx.config?.auth?.sessionSecret) {
+      json(res, { error: "Auth not configured" }, 400);
+      return;
+    }
+
+    const hash = hashPassword(body.password, ctx.config.auth.sessionSecret);
+    if (hash !== ctx.config.auth.passwordHash) {
+      json(res, { error: "Invalid password" }, 401);
+      return;
+    }
+
+    const token = generateToken();
+    activeSessions.set(token, { expiresAt: Date.now() + SESSION_TTL_MS });
+    setSessionCookie(res, token);
+    json(res, { ok: true });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Login failed";
+    json(res, { error: msg }, 400);
+  }
+}
+
+function handleLogout(req: http.IncomingMessage, res: http.ServerResponse) {
+  if (req.method !== "POST") { json(res, { error: "POST only" }, 405); return; }
+  const cookie = req.headers.cookie ?? "";
+  const match = cookie.match(/melista_session=([a-f0-9]+)/);
+  if (match) activeSessions.delete(match[1]);
+  res.setHeader("Set-Cookie", "melista_session=; Path=/; HttpOnly; Max-Age=0");
+  json(res, { ok: true });
+}
+
+async function handleAuthSetup(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  ctx: ServerContext,
+) {
+  if (req.method !== "POST") { json(res, { error: "POST only" }, 405); return; }
+  try {
+    const body = parseJsonBody<{ password: string }>(await readBody(req));
+    if (!body.password || body.password.length < 6) {
+      json(res, { error: "Password must be at least 6 characters" }, 400);
+      return;
+    }
+
+    const secret = crypto.randomBytes(16).toString("hex");
+    const hash = hashPassword(body.password, secret);
+
+    savePartialConfig({
+      auth: { passwordHash: hash, sessionSecret: secret },
+    });
+    if (ctx.config) {
+      ctx.config.auth = { passwordHash: hash, sessionSecret: secret };
+    }
+
+    // Auto-login after setup
+    const token = generateToken();
+    activeSessions.set(token, { expiresAt: Date.now() + SESSION_TTL_MS });
+    setSessionCookie(res, token);
+    json(res, { ok: true });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Setup failed";
     json(res, { error: msg }, 400);
   }
 }

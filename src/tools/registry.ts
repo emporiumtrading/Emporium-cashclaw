@@ -1,5 +1,5 @@
 import type { ToolDefinition } from "../llm/types.js";
-import type { CashClawConfig } from "../config.js";
+import type { MelistaConfig } from "../config.js";
 import type { Tool, ToolContext, ToolResult } from "./types.js";
 import {
   readTask,
@@ -38,10 +38,10 @@ const AGENTCASH_TOOLS: Tool[] = [
 ];
 
 // Memoize by config reference to avoid rebuilding on every tool call
-let cachedConfig: CashClawConfig | null = null;
+let cachedConfig: MelistaConfig | null = null;
 let cachedToolMap: Map<string, Tool> | null = null;
 
-function buildToolMap(config: CashClawConfig): Map<string, Tool> {
+function buildToolMap(config: MelistaConfig): Map<string, Tool> {
   if (cachedConfig === config && cachedToolMap) return cachedToolMap;
   const tools = config.agentCashEnabled
     ? [...BASE_TOOLS, ...AGENTCASH_TOOLS]
@@ -51,7 +51,7 @@ function buildToolMap(config: CashClawConfig): Map<string, Tool> {
   return cachedToolMap;
 }
 
-export function getToolDefinitions(config: CashClawConfig): ToolDefinition[] {
+export function getToolDefinitions(config: MelistaConfig): ToolDefinition[] {
   const toolMap = buildToolMap(config);
   return [...toolMap.values()].map((t) => t.definition);
 }

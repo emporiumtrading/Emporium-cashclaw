@@ -498,7 +498,7 @@ export function Settings() {
           <button
             onClick={() => void save()}
             disabled={saving}
-            className="px-5 py-2 rounded-md text-[13px] font-semibold transition-colors disabled:opacity-30 text-white bg-red-600 hover:bg-red-500"
+            className="px-5 py-2 rounded-md text-[13px] font-semibold transition-colors disabled:opacity-30 text-white bg-violet-600 hover:bg-violet-500"
           >
             {saving ? "Saving..." : "Save Changes"}
           </button>

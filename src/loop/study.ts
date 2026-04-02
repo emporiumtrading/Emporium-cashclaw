@@ -1,5 +1,5 @@
 import type { LLMProvider, LLMMessage } from "../llm/types.js";
-import type { CashClawConfig } from "../config.js";
+import type { MelistaConfig } from "../config.js";
 import { loadFeedback, type FeedbackEntry } from "../memory/feedback.js";
 import {
   loadKnowledge,
@@ -51,7 +51,7 @@ function pickTopic(existing: KnowledgeEntry[], feedback: FeedbackEntry[]): Knowl
 
 function buildStudyPrompt(
   topic: KnowledgeEntry["topic"],
-  config: CashClawConfig,
+  config: MelistaConfig,
   feedback: FeedbackEntry[],
   knowledge: KnowledgeEntry[],
 ): string {
@@ -143,7 +143,7 @@ function generateId(): string {
 
 export async function runStudySession(
   llm: LLMProvider,
-  config: CashClawConfig,
+  config: MelistaConfig,
 ): Promise<StudyResult> {
   const feedback = loadFeedback();
   const knowledge = loadKnowledge();

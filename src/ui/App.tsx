@@ -4,6 +4,7 @@ import { Tasks } from "./pages/Tasks.js";
 import { Chat } from "./pages/Chat.js";
 import { Settings } from "./pages/Settings.js";
 import { Setup } from "./pages/Setup.js";
+import { Login } from "./pages/Login.js";
 import { api, type WalletInfo, type StatusData } from "./lib/api.js";
 
 type Page = "dashboard" | "tasks" | "chat" | "settings";
@@ -15,26 +16,11 @@ const NAV: { page: Page; label: string; icon: string }[] = [
   { page: "settings", label: "Settings", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" },
 ];
 
-function ClawLogo() {
+function MelistaLogo() {
   return (
     <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="30" height="30" rx="6" fill="#dc2626" />
-      <path
-        d="M8 19 C8 14.5, 10 9, 15 7 C12.5 11, 12.5 13.5, 13.5 16.5"
-        stroke="white" strokeWidth="2.2" strokeLinecap="round" fill="none"
-      />
-      <path
-        d="M15 7 C16.5 9.5, 17.5 12.5, 15.5 16.5"
-        stroke="white" strokeWidth="2.2" strokeLinecap="round" fill="none"
-      />
-      <path
-        d="M15 7 C19 9.5, 21 14.5, 21 19"
-        stroke="white" strokeWidth="2.2" strokeLinecap="round" fill="none"
-      />
-      <path
-        d="M10.5 18.5 C11.5 16.5, 13.5 16, 15 16.5 C16 16, 18 16.5, 19 17.5"
-        stroke="white" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.5"
-      />
+      <rect width="30" height="30" rx="6" fill="#6d28d9" />
+      <text x="15" y="21" textAnchor="middle" fontSize="16" fontWeight="bold" fill="white" fontFamily="serif">μ</text>
     </svg>
   );
 }
@@ -44,12 +30,31 @@ export function App() {
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [status, setStatus] = useState<StatusData | null>(null);
   const [wallet, setWallet] = useState<WalletInfo | null>(null);
+  const [authState, setAuthState] = useState<"loading" | "login" | "setup" | "authenticated">("loading");
 
   useEffect(() => {
+    api.getAuthStatus()
+      .then((auth) => {
+        if (!auth.authRequired) {
+          setAuthState("authenticated");
+        } else if (auth.authenticated) {
+          setAuthState("authenticated");
+        } else {
+          setAuthState("login");
+        }
+      })
+      .catch(() => {
+        // If auth endpoint fails, check if we need initial setup
+        setAuthState("setup");
+      });
+  }, []);
+
+  useEffect(() => {
+    if (authState !== "authenticated") return;
     api.getSetupStatus()
       .then((s) => setConfigured(s.configured && s.mode === "running"))
       .catch(() => setConfigured(false));
-  }, []);
+  }, [authState]);
 
   useEffect(() => {
     if (!configured) return;
@@ -61,6 +66,23 @@ export function App() {
     const interval = setInterval(poll, 5000);
     return () => clearInterval(interval);
   }, [configured]);
+
+  if (authState === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-5 h-5 border-2 border-zinc-700 border-t-zinc-400 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (authState === "login" || authState === "setup") {
+    return (
+      <Login
+        needsSetup={authState === "setup"}
+        onAuth={() => setAuthState("authenticated")}
+      />
+    );
+  }
 
   if (configured === null) {
     return (
@@ -83,9 +105,9 @@ export function App() {
         {/* Logo */}
         <div className="px-5 py-5 border-b border-zinc-800/60">
           <div className="flex items-center gap-3">
-            <ClawLogo />
+            <MelistaLogo />
             <div>
-              <h1 className="text-[15px] font-bold text-zinc-100 leading-none tracking-tight">CashClaw</h1>
+              <h1 className="text-[15px] font-bold text-zinc-100 leading-none tracking-tight">Melista</h1>
               <p className="text-[11px] text-zinc-600 leading-none mt-1">Autonomous Agent</p>
             </div>
           </div>
@@ -104,7 +126,7 @@ export function App() {
               }`}
             >
               {page === n.page && (
-                <span className="w-[3px] h-4 rounded-full bg-red-500 -ml-1.5 mr-0.5 shrink-0" />
+                <span className="w-[3px] h-4 rounded-full bg-violet-500 -ml-1.5 mr-0.5 shrink-0" />
               )}
               <svg className="w-[17px] h-[17px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d={n.icon} />
@@ -143,7 +165,17 @@ export function App() {
 
           <div className="flex items-center justify-between pt-1 border-t border-zinc-800/40">
             <span className="text-[10px] text-zinc-700 font-mono">v0.1.0</span>
-            <SystemClock />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  api.logout().then(() => setAuthState("login")).catch(() => {});
+                }}
+                className="text-[10px] text-zinc-700 hover:text-zinc-400 transition-colors"
+              >
+                Logout
+              </button>
+              <SystemClock />
+            </div>
           </div>
         </div>
       </aside>

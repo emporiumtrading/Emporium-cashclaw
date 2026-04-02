@@ -143,8 +143,8 @@ function createOpenAICompatibleProvider(
       };
 
       if (baseUrl.includes("openrouter")) {
-        headers["HTTP-Referer"] = "https://cashclaw.dev";
-        headers["X-Title"] = "CashClaw";
+        headers["HTTP-Referer"] = "https://melista.dev";
+        headers["X-Title"] = "Melista";
       }
 
       const body: Record<string, unknown> = {

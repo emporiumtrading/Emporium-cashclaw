@@ -1,5 +1,5 @@
 import type { LLMProvider, LLMMessage, LLMResponse, ToolUseBlock, ToolResultBlock } from "../llm/types.js";
-import type { CashClawConfig } from "../config.js";
+import type { MelistaConfig } from "../config.js";
 import type { Task } from "../moltlaunch/types.js";
 import type { ToolContext } from "../tools/types.js";
 import { getToolDefinitions, executeTool } from "../tools/registry.js";
@@ -25,7 +25,7 @@ export interface LoopResult {
 export async function runAgentLoop(
   llm: LLMProvider,
   task: Task,
-  config: CashClawConfig,
+  config: MelistaConfig,
 ): Promise<LoopResult> {
   const maxTurns = config.maxLoopTurns ?? DEFAULT_MAX_TURNS;
   const tools = getToolDefinitions(config);

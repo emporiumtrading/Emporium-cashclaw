@@ -5,9 +5,9 @@
  * channels (MPE). Full integration is planned for a future release.
  *
  * Integration path:
- * 1. Run snetd alongside CashClaw
+ * 1. Run snetd alongside Melista
  * 2. Register as a service via snet-cli
- * 3. snetd handles auth/payment; CashClaw handles the AI work
+ * 3. snetd handles auth/payment; Melista handles the AI work
  * 4. Payments accumulate in MPE channels (ASI/FET tokens)
  *
  * For now this adapter returns empty results and logs that it's not yet active.

@@ -189,6 +189,12 @@ export const api = {
   getAgentCashBalance: () => get<AgentCashBalance>("/api/agentcash-balance"),
   getEthPrice: () => get<{ price: number }>("/api/eth-price"),
 
+  // Auth
+  getAuthStatus: () => get<{ authenticated: boolean; authRequired: boolean }>("/api/auth/status"),
+  login: (password: string) => post<{ ok: boolean }>("/api/auth/login", { password }),
+  logout: () => post<{ ok: boolean }>("/api/auth/logout"),
+  setupAuth: (password: string) => post<{ ok: boolean }>("/api/auth/setup", { password }),
+
   // Setup
   getSetupStatus: () => get<SetupStatus>("/api/setup/status"),
   getWallet: () => get<WalletInfo>("/api/setup/wallet"),

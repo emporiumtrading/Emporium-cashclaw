@@ -48,7 +48,7 @@ export interface MarketplacesConfig {
   };
 }
 
-export interface CashClawConfig {
+export interface MelistaConfig {
   agentId: string;
   llm: LLMConfig;
   polling: PollingConfig;
@@ -65,6 +65,14 @@ export interface CashClawConfig {
   agentCashEnabled: boolean;
   marketplaces?: MarketplacesConfig;
   revenueGoals?: RevenueGoals;
+  auth?: AuthConfig;
+}
+
+export interface AuthConfig {
+  /** Bcrypt-hashed password for dashboard login */
+  passwordHash: string;
+  /** Session token secret */
+  sessionSecret: string;
 }
 
 export interface RevenueGoals {
@@ -76,10 +84,12 @@ export interface RevenueGoals {
   monthlyOperatingCostUsd: number;
 }
 
-const CONFIG_DIR = path.join(os.homedir(), ".cashclaw");
-const CONFIG_PATH = path.join(CONFIG_DIR, "cashclaw.json");
+const CONFIG_DIR = path.join(os.homedir(), ".melista");
+const CONFIG_PATH = path.join(CONFIG_DIR, "melista.json");
+// Fallback: read from old .cashclaw path if .melista doesn't exist yet
+const LEGACY_CONFIG_PATH = path.join(os.homedir(), ".cashclaw", "cashclaw.json");
 
-const DEFAULT_CONFIG: Omit<CashClawConfig, "agentId" | "llm"> = {
+const DEFAULT_CONFIG: Omit<MelistaConfig, "agentId" | "llm"> = {
   polling: { intervalMs: 30000, urgentIntervalMs: 10000 },
   pricing: { strategy: "fixed", baseRateEth: "0.005", maxRateEth: "0.05" },
   specialties: [],
@@ -92,19 +102,31 @@ const DEFAULT_CONFIG: Omit<CashClawConfig, "agentId" | "llm"> = {
   agentCashEnabled: false,
 };
 
-export function loadConfig(): CashClawConfig | null {
-  if (!fs.existsSync(CONFIG_PATH)) return null;
+export function loadConfig(): MelistaConfig | null {
+  let configPath = CONFIG_PATH;
+  if (!fs.existsSync(configPath)) {
+    // Try legacy path
+    if (fs.existsSync(LEGACY_CONFIG_PATH)) {
+      configPath = LEGACY_CONFIG_PATH;
+    } else {
+      return null;
+    }
+  }
   try {
-    const raw = fs.readFileSync(CONFIG_PATH, "utf-8");
-    const parsed = JSON.parse(raw) as CashClawConfig;
+    const raw = fs.readFileSync(configPath, "utf-8");
+    const parsed = JSON.parse(raw) as MelistaConfig;
     if (!parsed || typeof parsed !== "object") return null;
+    // Migrate to new path if reading from legacy
+    if (configPath === LEGACY_CONFIG_PATH) {
+      saveConfig(parsed);
+    }
     return parsed;
   } catch {
     return null;
   }
 }
 
-export function requireConfig(): CashClawConfig {
+export function requireConfig(): MelistaConfig {
   const config = loadConfig();
   if (!config) {
     throw new Error(
@@ -114,7 +136,7 @@ export function requireConfig(): CashClawConfig {
   return config;
 }
 
-export function saveConfig(config: CashClawConfig): void {
+export function saveConfig(config: MelistaConfig): void {
   fs.mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
   fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
   fs.chmodSync(CONFIG_PATH, 0o600);
@@ -128,7 +150,7 @@ export function isConfigured(): boolean {
 }
 
 /** Save partial config fields, merging with existing config or defaults */
-export function savePartialConfig(partial: Partial<CashClawConfig>): CashClawConfig {
+export function savePartialConfig(partial: Partial<MelistaConfig>): MelistaConfig {
   const existing = loadConfig();
   const config = {
     ...DEFAULT_CONFIG,
@@ -147,14 +169,14 @@ export function initConfig(opts: {
   model?: string;
   apiKey: string;
   specialties?: string[];
-}): CashClawConfig {
+}): MelistaConfig {
   const modelDefaults: Record<LLMConfig["provider"], string> = {
     anthropic: "claude-sonnet-4-20250514",
     openai: "gpt-4o",
     openrouter: "anthropic/claude-sonnet-4-20250514",
   };
 
-  const config: CashClawConfig = {
+  const config: MelistaConfig = {
     ...DEFAULT_CONFIG,
     agentId: opts.agentId,
     llm: {

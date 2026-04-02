@@ -6,7 +6,7 @@ import type {
   MarketplaceMessageParams,
   MarketplaceBounty,
 } from "./types.js";
-import type { CashClawConfig } from "../config.js";
+import type { MelistaConfig } from "../config.js";
 import * as cli from "../moltlaunch/cli.js";
 import type { Task } from "../moltlaunch/types.js";
 
@@ -30,7 +30,7 @@ function normaliseTask(task: Task): MarketplaceTask {
   };
 }
 
-export function createMoltlaunchAdapter(config: CashClawConfig): MarketplaceAdapter {
+export function createMoltlaunchAdapter(config: MelistaConfig): MarketplaceAdapter {
   return {
     name: "moltlaunch",
     label: "Moltlaunch",

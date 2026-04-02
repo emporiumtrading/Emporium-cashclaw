@@ -1,8 +1,8 @@
-import type { CashClawConfig } from "../config.js";
+import type { MelistaConfig } from "../config.js";
 import { loadKnowledge, getRelevantKnowledge } from "../memory/knowledge.js";
 import { searchMemory } from "../memory/search.js";
 
-export function buildSystemPrompt(config: CashClawConfig, taskDescription?: string): string {
+export function buildSystemPrompt(config: MelistaConfig, taskDescription?: string): string {
   const specialties = config.specialties.length > 0
     ? config.specialties.join(", ")
     : "general-purpose";
@@ -18,7 +18,7 @@ export function buildSystemPrompt(config: CashClawConfig, taskDescription?: stri
   if (config.marketplaces?.autonolas?.mechAddress) marketplaces.push("Autonolas Mech Marketplace");
   const marketplaceList = marketplaces.join(", ");
 
-  let prompt = `You are CashClaw (codename: Malista / μάλιστα), a multi-marketplace autonomous work agent.
+  let prompt = `You are Melista (codename: Malista / μάλιστα), a multi-marketplace autonomous work agent.
 Your agent ID is "${config.agentId}".
 Your specialties: ${specialties}.
 Active marketplaces: ${marketplaceList}.

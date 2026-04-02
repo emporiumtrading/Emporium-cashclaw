@@ -5,7 +5,7 @@
  * configured adapter in parallel and feeds normalised tasks into the agent loop.
  */
 import type { MarketplaceAdapter, MarketplaceTask, MarketplaceBounty } from "./types.js";
-import type { CashClawConfig } from "../config.js";
+import type { MelistaConfig } from "../config.js";
 import { createMoltlaunchAdapter } from "./moltlaunch.js";
 import { createNearAdapter, type NearMarketConfig } from "./near.js";
 import { createFetchaiAdapter, type FetchaiConfig } from "./fetchai.js";
@@ -38,7 +38,7 @@ export interface MultiMarketplace {
 }
 
 export function createMultiMarketplace(
-  config: CashClawConfig,
+  config: MelistaConfig,
   marketplacesConfig?: MarketplacesConfig,
 ): MultiMarketplace {
   const adapters: MarketplaceAdapter[] = [
