@@ -35,9 +35,18 @@ function generateToken(): string {
   return crypto.randomBytes(32).toString("hex");
 }
 
+function getAuthConfig(ctx: ServerContext): { passwordHash: string; sessionSecret: string } | null {
+  // Check running config first, then fall back to disk
+  if (ctx.config?.auth?.passwordHash) return ctx.config.auth;
+  const diskConfig = loadConfig();
+  if (diskConfig?.auth?.passwordHash) return diskConfig.auth;
+  return null;
+}
+
 function isAuthenticated(req: http.IncomingMessage, ctx: ServerContext): boolean {
   // No auth configured = open access (backward compatible)
-  if (!ctx.config?.auth?.passwordHash) return true;
+  const auth = getAuthConfig(ctx);
+  if (!auth) return true;
 
   const cookie = req.headers.cookie ?? "";
   const match = cookie.match(/melista_session=([a-f0-9]+)/);
@@ -120,7 +129,7 @@ function createServer(ctx: ServerContext): http.Server {
     if (url.pathname === "/api/auth/status") {
       json(res, {
         authenticated: isAuthenticated(req, ctx),
-        authRequired: Boolean(ctx.config?.auth?.passwordHash),
+        authRequired: Boolean(getAuthConfig(ctx)),
       });
       return;
     }
@@ -797,13 +806,14 @@ async function handleLogin(
       return;
     }
 
-    if (!ctx.config?.auth?.passwordHash || !ctx.config?.auth?.sessionSecret) {
+    const auth = getAuthConfig(ctx);
+    if (!auth) {
       json(res, { error: "Auth not configured" }, 400);
       return;
     }
 
-    const hash = hashPassword(body.password, ctx.config.auth.sessionSecret);
-    if (hash !== ctx.config.auth.passwordHash) {
+    const hash = hashPassword(body.password, auth.sessionSecret);
+    if (hash !== auth.passwordHash) {
       json(res, { error: "Invalid password" }, 401);
       return;
     }

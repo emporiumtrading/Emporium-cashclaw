@@ -130,7 +130,7 @@ export function requireConfig(): MelistaConfig {
   const config = loadConfig();
   if (!config) {
     throw new Error(
-      "No config found. Run `cashclaw init` first.",
+      "No config found. Complete setup at the dashboard first.",
     );
   }
   return config;
