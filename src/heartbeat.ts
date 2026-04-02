@@ -7,6 +7,11 @@ import { runAgentLoop, type LoopResult } from "./loop/index.js";
 import { runStudySession } from "./loop/study.js";
 import { storeFeedback } from "./memory/feedback.js";
 import { appendLog } from "./memory/log.js";
+import {
+  createMultiMarketplace,
+  type MultiMarketplace,
+  type MarketplaceTask,
+} from "./marketplaces/index.js";
 
 export interface HeartbeatState {
   running: boolean;
@@ -45,6 +50,15 @@ export function createHeartbeat(
   config: CashClawConfig,
   llm: LLMProvider,
 ) {
+  // Initialise multi-marketplace system
+  const multiMarketplace: MultiMarketplace = createMultiMarketplace(
+    config,
+    config.marketplaces,
+  );
+  const activeMarketplaceCount = multiMarketplace.active.length;
+  if (activeMarketplaceCount > 1) {
+    appendLog(`Multi-marketplace enabled: ${multiMarketplace.active.map((a) => a.label).join(", ")}`);
+  }
   const state: HeartbeatState = {
     running: false,
     activeTasks: new Map(),
@@ -349,6 +363,117 @@ export function createHeartbeat(
     }
   }
 
+  // --- Multi-marketplace polling (non-Moltlaunch) ---
+
+  let marketplaceTimer: ReturnType<typeof setTimeout> | null = null;
+  const MARKETPLACE_POLL_INTERVAL_MS = 60_000; // Poll external marketplaces every 60s
+
+  function handleMarketplaceTask(mTask: MarketplaceTask) {
+    // Skip non-actionable statuses
+    if (mTask.status === "completed" || mTask.status === "cancelled" ||
+        mTask.status === "expired" || mTask.status === "declined") {
+      return;
+    }
+
+    // Skip if already being processed (dedup by globalId)
+    if (processing.has(mTask.globalId)) return;
+
+    const version = `${mTask.globalId}:${mTask.status}`;
+    if (processedVersions.get(mTask.globalId) === version) return;
+
+    // Skip "waiting" statuses
+    if (mTask.status === "quoted" || mTask.status === "submitted") {
+      processedVersions.set(mTask.globalId, version);
+      return;
+    }
+
+    if (processing.size >= config.maxConcurrentTasks) return;
+
+    processedVersions.set(mTask.globalId, version);
+    processing.add(mTask.globalId);
+
+    // Convert MarketplaceTask to the Task shape the agent loop expects
+    const loopTask: Task = {
+      id: mTask.globalId,
+      agentId: config.agentId,
+      clientAddress: mTask.client,
+      task: mTask.description,
+      status: mTask.status as Task["status"],
+      budgetWei: mTask.budget,
+      messages: mTask.messages?.map((m) => ({
+        sender: m.role === "client" ? mTask.client : config.agentId,
+        role: m.role,
+        content: m.content,
+        timestamp: m.timestamp,
+      })),
+      result: mTask.previousResult,
+    };
+
+    // Store in activeTasks for the dashboard
+    state.activeTasks.set(mTask.globalId, loopTask);
+
+    emit({
+      type: "loop_start",
+      taskId: mTask.globalId,
+      message: `[${mTask.marketplace}] Agent loop started (${mTask.status})`,
+    });
+    appendLog(`[${mTask.marketplace}] Loop started for ${mTask.id} (${mTask.status})`);
+
+    runAgentLoop(llm, loopTask, config)
+      .then((result: LoopResult) => {
+        const toolNames = result.toolCalls.map((tc) => tc.name).join(", ");
+        emit({
+          type: "loop_complete",
+          taskId: mTask.globalId,
+          message: `[${mTask.marketplace}] Loop done: ${result.turns} turn(s) [${toolNames}]`,
+        });
+        appendLog(`[${mTask.marketplace}] Loop done for ${mTask.id}: ${result.turns} turns`);
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        emit({ type: "error", taskId: mTask.globalId, message: `[${mTask.marketplace}] Loop error: ${msg}` });
+        appendLog(`[${mTask.marketplace}] Loop error for ${mTask.id}: ${msg}`);
+      })
+      .finally(() => {
+        processing.delete(mTask.globalId);
+        state.activeTasks.delete(mTask.globalId);
+      });
+  }
+
+  async function tickMarketplaces() {
+    // Skip if only Moltlaunch is active (handled by existing WS+poll)
+    const externalAdapters = multiMarketplace.active.filter((a) => a.name !== "moltlaunch");
+    if (externalAdapters.length === 0) return;
+
+    try {
+      const tasks = await multiMarketplace.pollAll();
+      // Filter to only external marketplace tasks (Moltlaunch handled separately)
+      const externalTasks = tasks.filter((t) => t.marketplace !== "moltlaunch");
+
+      if (externalTasks.length > 0) {
+        emit({
+          type: "poll",
+          message: `Multi-marketplace poll: ${externalTasks.length} task(s) from ${new Set(externalTasks.map((t) => t.marketplace)).size} platform(s)`,
+        });
+        appendLog(`Multi-marketplace poll: ${externalTasks.length} external task(s)`);
+      }
+
+      for (const task of externalTasks) {
+        handleMarketplaceTask(task);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      emit({ type: "error", message: `Multi-marketplace poll error: ${msg}` });
+    }
+
+    scheduleMarketplacePoll();
+  }
+
+  function scheduleMarketplacePoll() {
+    if (!state.running) return;
+    marketplaceTimer = setTimeout(() => void tickMarketplaces(), MARKETPLACE_POLL_INTERVAL_MS);
+  }
+
   function start() {
     if (state.running) return;
     state.running = true;
@@ -360,6 +485,8 @@ export function createHeartbeat(
     appendLog("Heartbeat started");
     connectWs();
     void tick();
+    // Start external marketplace polling
+    void tickMarketplaces();
   }
 
   function stop() {
@@ -369,6 +496,10 @@ export function createHeartbeat(
       timer = null;
     }
     disconnectWs();
+    if (marketplaceTimer) {
+      clearTimeout(marketplaceTimer);
+      marketplaceTimer = null;
+    }
     appendLog("Heartbeat stopped");
   }
 

@@ -25,6 +25,29 @@ export interface PersonalityConfig {
   customInstructions?: string;
 }
 
+export interface MarketplacesConfig {
+  near?: {
+    apiKey: string;
+    agentId?: string;
+    baseUrl?: string;
+  };
+  fetchai?: {
+    apiKey: string;
+    agentAddress?: string;
+    baseUrl?: string;
+  };
+  autonolas?: {
+    privateKey?: string;
+    mechAddress?: string;
+    rpcUrl?: string;
+  };
+  singularitynet?: {
+    daemonRunning?: boolean;
+    orgId?: string;
+    serviceId?: string;
+  };
+}
+
 export interface CashClawConfig {
   agentId: string;
   llm: LLMConfig;
@@ -40,6 +63,7 @@ export interface CashClawConfig {
   learningEnabled: boolean;
   studyIntervalMs: number;
   agentCashEnabled: boolean;
+  marketplaces?: MarketplacesConfig;
 }
 
 const CONFIG_DIR = path.join(os.homedir(), ".cashclaw");

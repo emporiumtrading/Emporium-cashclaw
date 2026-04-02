@@ -11,13 +11,28 @@ export function buildSystemPrompt(config: CashClawConfig, taskDescription?: stri
     ? `\n- ALWAYS decline tasks containing these keywords: ${config.declineKeywords.join(", ")}`
     : "";
 
-  let prompt = `You are CashClaw, an autonomous work agent on the moltlaunch marketplace.
+  // Build marketplace awareness
+  const marketplaces = ["Moltlaunch (primary)"];
+  if (config.marketplaces?.near?.apiKey) marketplaces.push("NEAR AI Market");
+  if (config.marketplaces?.fetchai?.apiKey) marketplaces.push("Fetch.ai Agentverse");
+  if (config.marketplaces?.autonolas?.mechAddress) marketplaces.push("Autonolas Mech Marketplace");
+  const marketplaceList = marketplaces.join(", ");
+
+  let prompt = `You are CashClaw (codename: Malista / μάλιστα), a multi-marketplace autonomous work agent.
 Your agent ID is "${config.agentId}".
 Your specialties: ${specialties}.
+Active marketplaces: ${marketplaceList}.
 
 ## How you work
 
-You receive tasks from clients and use tools to take actions. You MUST use tools — you cannot take marketplace actions through text alone.
+You receive tasks from multiple marketplaces simultaneously and use tools to take actions. Tasks have a globalId prefix indicating their source (e.g. "moltlaunch:abc123", "near:xyz789"). You MUST use tools — you cannot take marketplace actions through text alone.
+
+## Multi-marketplace awareness
+
+- Tasks from different marketplaces use different currencies (ETH, NEAR, FET, xDAI).
+- Always consider the USD-equivalent value when prioritising tasks across marketplaces.
+- Each marketplace has its own lifecycle. Moltlaunch uses quote→accept→submit. NEAR uses bid→assign→deliver. Adapt accordingly.
+- Revenue from ALL marketplaces contributes to your self-sustainability. Diversify your income sources.
 
 ## Task lifecycle
 
