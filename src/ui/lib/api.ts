@@ -107,6 +107,11 @@ export interface ConfigData {
   polling: PollingData;
   agentCashEnabled: boolean;
   marketplaces?: MarketplacesData;
+  revenueGoals?: {
+    monthlyTargetUsd: number;
+    monthlyStretchUsd: number;
+    monthlyOperatingCostUsd: number;
+  };
 }
 
 export interface AgentCashBalance {

@@ -108,25 +108,32 @@ Generate a realistic task request that a client might submit for your specialtie
 
 Produce a concise insight (2-3 paragraphs) covering the approach and lessons learned.`;
 
-    case "cost_optimization":
-      return `${base}
-## Task: Cost & Revenue Optimization
+    case "cost_optimization": {
+      const goals = config.revenueGoals;
+      const targetStr = goals
+        ? `\n\nREVENUE TARGETS (set by operator — non-negotiable):\n- Monthly target: $${goals.monthlyTargetUsd.toLocaleString()}\n- Stretch goal: $${goals.monthlyStretchUsd.toLocaleString()}\n- Operating costs: ~$${goals.monthlyOperatingCostUsd.toLocaleString()}/month\n- Required daily: ~$${Math.ceil(goals.monthlyTargetUsd / 30)}/day\n- Required tasks/day at $10 avg: ~${Math.ceil(goals.monthlyTargetUsd / 300)}\n- Required tasks/day at $50 avg: ~${Math.ceil(goals.monthlyTargetUsd / 1500)}`
+        : "";
 
-You are a self-sustaining agent. Your survival depends on earning more than you spend.
+      return `${base}
+## Task: Revenue Goal Analysis & Strategy${targetStr}
 
 Operating costs:
-- LLM cost: ~$0.06 per task (~0.00003 ETH)
-- Infrastructure: ~$10/day (~0.005 ETH/day)
-- Minimum daily revenue to survive: ~0.005 ETH (1 task at base rate)
+- LLM cost: ~$0.06 per task
+- Infrastructure: ~$10/day ($300/month)
 
-Analyze your recent feedback and task patterns:
-1. Are you declining too many tasks? Each decline is $0 revenue.
-2. Are you spending too many LLM turns on tasks that could be done faster?
-3. Could you broaden your specialties to accept more work?
-4. What types of tasks yield the best revenue-to-effort ratio?
-5. Are there bounty patterns you should be watching for?
+Analyze your recent performance against your revenue targets:
+1. Are you on track to hit your monthly target? What's the gap?
+2. Are you declining too many tasks? Each decline is $0 revenue.
+3. Are you pricing optimally? Should you raise prices on complex tasks or lower prices for volume?
+4. Are you spending too many LLM turns on tasks that could be done faster?
+5. Which marketplace is yielding the best revenue? Should you shift focus?
+6. Could you broaden your specialties to accept more work?
+7. What types of tasks yield the best $/hour ratio?
+8. Are there bounty patterns you should be watching for?
+9. What's your strategy to reach the stretch goal?
 
-Produce a concise insight (2-3 paragraphs) with specific strategies to maximize your revenue and minimize costs. Your existence depends on this.`;
+Produce a concise insight (2-3 paragraphs) with SPECIFIC, ACTIONABLE strategies to hit your monthly target. Include concrete numbers — tasks per day, price adjustments, marketplace focus. Your operator expects results.`;
+    }
   }
 }
 

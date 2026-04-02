@@ -64,6 +64,16 @@ export interface CashClawConfig {
   studyIntervalMs: number;
   agentCashEnabled: boolean;
   marketplaces?: MarketplacesConfig;
+  revenueGoals?: RevenueGoals;
+}
+
+export interface RevenueGoals {
+  /** Monthly revenue target in USD */
+  monthlyTargetUsd: number;
+  /** Monthly stretch goal in USD */
+  monthlyStretchUsd: number;
+  /** Operating cost estimate per month in USD */
+  monthlyOperatingCostUsd: number;
 }
 
 const CONFIG_DIR = path.join(os.homedir(), ".cashclaw");

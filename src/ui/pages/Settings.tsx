@@ -28,6 +28,9 @@ interface FormState {
   fetchaiAgentAddress: string;
   autMechAddress: string;
   autPrivateKey: string;
+  revenueTarget: number;
+  revenueStretch: number;
+  operatingCost: number;
 }
 
 function configToForm(c: ConfigData): FormState {
@@ -57,6 +60,9 @@ function configToForm(c: ConfigData): FormState {
     fetchaiAgentAddress: c.marketplaces?.fetchai?.agentAddress ?? "",
     autMechAddress: c.marketplaces?.autonolas?.mechAddress ?? "",
     autPrivateKey: c.marketplaces?.autonolas?.privateKey ?? "",
+    revenueTarget: c.revenueGoals?.monthlyTargetUsd ?? 10000,
+    revenueStretch: c.revenueGoals?.monthlyStretchUsd ?? 20000,
+    operatingCost: c.revenueGoals?.monthlyOperatingCostUsd ?? 350,
   };
 }
 
@@ -134,6 +140,11 @@ export function Settings() {
           urgentIntervalMs: form.urgentPollIntervalSec * 1000,
         },
         ...llmUpdate,
+        revenueGoals: {
+          monthlyTargetUsd: form.revenueTarget,
+          monthlyStretchUsd: form.revenueStretch,
+          monthlyOperatingCostUsd: form.operatingCost,
+        },
         marketplaces: {
           near: (form.nearApiKey && form.nearApiKey !== "")
             ? { apiKey: form.nearApiKey, agentId: form.nearAgentId || undefined }
@@ -257,6 +268,39 @@ export function Settings() {
             </a>
           </div>
         )}
+      </Section>
+
+      {/* Revenue Goals */}
+      <Section title="Revenue Goals">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="space-y-2">
+            <Field label="Monthly Target (USD)">
+              <input type="number" min={0} step={1000} value={form.revenueTarget} onChange={(e) => update("revenueTarget", Number(e.target.value))} className={inputClass} />
+            </Field>
+            <p className="text-[10px] text-zinc-600 font-mono">~${Math.ceil(form.revenueTarget / 30).toLocaleString()}/day &middot; ~{Math.ceil(form.revenueTarget / 300)} tasks/day @ $10</p>
+          </div>
+          <div className="space-y-2">
+            <Field label="Stretch Goal (USD)">
+              <input type="number" min={0} step={1000} value={form.revenueStretch} onChange={(e) => update("revenueStretch", Number(e.target.value))} className={inputClass} />
+            </Field>
+            <p className="text-[10px] text-zinc-600 font-mono">~${Math.ceil(form.revenueStretch / 30).toLocaleString()}/day &middot; ~{Math.ceil(form.revenueStretch / 300)} tasks/day @ $10</p>
+          </div>
+          <div className="space-y-2">
+            <Field label="Operating Costs (USD/mo)">
+              <input type="number" min={0} step={50} value={form.operatingCost} onChange={(e) => update("operatingCost", Number(e.target.value))} className={inputClass} />
+            </Field>
+            <p className="text-[10px] text-zinc-600 font-mono">
+              Profit margin: {form.revenueTarget > 0 ? Math.round(((form.revenueTarget - form.operatingCost) / form.revenueTarget) * 100) : 0}%
+              &middot; Net ~${(form.revenueTarget - form.operatingCost).toLocaleString()}/mo
+            </p>
+          </div>
+        </div>
+        <div className="mt-4 pt-3 border-t border-zinc-800/50">
+          <p className="text-[11px] text-zinc-500">
+            Malista uses these goals to drive pricing, task acceptance, bounty hunting, and self-study decisions.
+            Every task declined is revenue lost toward these targets. The agent will autonomously optimize its strategy to hit these numbers.
+          </p>
+        </div>
       </Section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

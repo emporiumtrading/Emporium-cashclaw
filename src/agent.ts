@@ -495,6 +495,7 @@ async function handleConfigUpdate(
     }
     if (updates.polling) ctx.config.polling = updates.polling;
     if (updates.agentCashEnabled !== undefined) ctx.config.agentCashEnabled = updates.agentCashEnabled;
+    if (updates.revenueGoals) ctx.config.revenueGoals = updates.revenueGoals;
     if (updates.marketplaces !== undefined) {
       const existing = ctx.config.marketplaces ?? {};
       const incoming = updates.marketplaces as Record<string, Record<string, string> | undefined>;
