@@ -165,11 +165,24 @@ function handleApi(
       json(res, { log: readTodayLog() });
       break;
 
-    case "/api/config":
+    case "/api/config": {
+      const maskedMarketplaces = ctx.config.marketplaces ? {
+        near: ctx.config.marketplaces.near
+          ? { ...ctx.config.marketplaces.near, apiKey: ctx.config.marketplaces.near.apiKey ? "***" : "" }
+          : undefined,
+        fetchai: ctx.config.marketplaces.fetchai
+          ? { ...ctx.config.marketplaces.fetchai, apiKey: ctx.config.marketplaces.fetchai.apiKey ? "***" : "" }
+          : undefined,
+        autonolas: ctx.config.marketplaces.autonolas
+          ? { ...ctx.config.marketplaces.autonolas, privateKey: ctx.config.marketplaces.autonolas.privateKey ? "***" : "" }
+          : undefined,
+      } : undefined;
       json(res, {
         ...ctx.config,
         llm: { ...ctx.config.llm, apiKey: "***" },
+        marketplaces: maskedMarketplaces,
       });
+    }
       break;
 
     case "/api/stats":
@@ -482,6 +495,21 @@ async function handleConfigUpdate(
     }
     if (updates.polling) ctx.config.polling = updates.polling;
     if (updates.agentCashEnabled !== undefined) ctx.config.agentCashEnabled = updates.agentCashEnabled;
+    if (updates.marketplaces !== undefined) {
+      const existing = ctx.config.marketplaces ?? {};
+      const incoming = updates.marketplaces as Record<string, Record<string, string> | undefined>;
+      // Preserve existing secrets when masked value "***" is sent
+      if (incoming.near) {
+        if (incoming.near.apiKey === "***") incoming.near.apiKey = existing.near?.apiKey ?? "";
+      }
+      if (incoming.fetchai) {
+        if (incoming.fetchai.apiKey === "***") incoming.fetchai.apiKey = existing.fetchai?.apiKey ?? "";
+      }
+      if (incoming.autonolas) {
+        if (incoming.autonolas.privateKey === "***") incoming.autonolas.privateKey = existing.autonolas?.privateKey ?? "";
+      }
+      ctx.config.marketplaces = { ...existing, ...updates.marketplaces };
+    }
 
     // LLM hot-swap: preserve existing apiKey if masked, restart heartbeat
     if (updates.llm) {

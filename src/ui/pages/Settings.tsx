@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { api, type ConfigData, type AgentInfo, type PersonalityData } from "../lib/api.js";
+import { api, type ConfigData, type AgentInfo, type PersonalityData, type MarketplacesData } from "../lib/api.js";
 import { ethToUsd, usdToEth } from "../lib/ethPrice.js";
 
 interface FormState {
@@ -22,6 +22,12 @@ interface FormState {
   llmProvider: string;
   llmModel: string;
   llmApiKey: string;
+  nearApiKey: string;
+  nearAgentId: string;
+  fetchaiApiKey: string;
+  fetchaiAgentAddress: string;
+  autMechAddress: string;
+  autPrivateKey: string;
 }
 
 function configToForm(c: ConfigData): FormState {
@@ -45,6 +51,12 @@ function configToForm(c: ConfigData): FormState {
     llmProvider: c.llm.provider,
     llmModel: c.llm.model,
     llmApiKey: c.llm.apiKey,
+    nearApiKey: c.marketplaces?.near?.apiKey ?? "",
+    nearAgentId: c.marketplaces?.near?.agentId ?? "",
+    fetchaiApiKey: c.marketplaces?.fetchai?.apiKey ?? "",
+    fetchaiAgentAddress: c.marketplaces?.fetchai?.agentAddress ?? "",
+    autMechAddress: c.marketplaces?.autonolas?.mechAddress ?? "",
+    autPrivateKey: c.marketplaces?.autonolas?.privateKey ?? "",
   };
 }
 
@@ -122,6 +134,17 @@ export function Settings() {
           urgentIntervalMs: form.urgentPollIntervalSec * 1000,
         },
         ...llmUpdate,
+        marketplaces: {
+          near: (form.nearApiKey && form.nearApiKey !== "")
+            ? { apiKey: form.nearApiKey, agentId: form.nearAgentId || undefined }
+            : undefined,
+          fetchai: (form.fetchaiApiKey && form.fetchaiApiKey !== "")
+            ? { apiKey: form.fetchaiApiKey, agentAddress: form.fetchaiAgentAddress || undefined }
+            : undefined,
+          autonolas: (form.autMechAddress && form.autMechAddress !== "")
+            ? { mechAddress: form.autMechAddress, privateKey: form.autPrivateKey || undefined }
+            : undefined,
+        },
       });
       setMessage("SAVED");
       setTimeout(() => setMessage(""), 2000);
@@ -365,6 +388,60 @@ export function Settings() {
 
         </div>
       </div>
+
+      {/* Marketplaces — Full Width */}
+      <Section title="Marketplaces">
+        <p className="text-[11px] text-zinc-600 mb-4">
+          Connect to additional AI agent marketplaces. API keys are encrypted and persisted to disk.
+        </p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {/* NEAR */}
+          <div className="space-y-3 p-4 rounded-lg bg-zinc-900/50 border border-zinc-800/50">
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`w-2 h-2 rounded-full ${form.nearApiKey && form.nearApiKey !== "" ? "bg-emerald-400" : "bg-zinc-700"}`} />
+              <span className="text-[12px] font-bold text-zinc-300 uppercase tracking-wider">NEAR AI Market</span>
+            </div>
+            <Field label="API Key" hint="from market.near.ai">
+              <input type="password" value={form.nearApiKey} onChange={(e) => update("nearApiKey", e.target.value)} placeholder="Enter NEAR Market API key" className={inputClass} />
+            </Field>
+            <Field label="Agent ID" hint="optional">
+              <input type="text" value={form.nearAgentId} onChange={(e) => update("nearAgentId", e.target.value)} placeholder="malista.near" className={inputClass} />
+            </Field>
+          </div>
+
+          {/* Fetch.ai */}
+          <div className="space-y-3 p-4 rounded-lg bg-zinc-900/50 border border-zinc-800/50">
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`w-2 h-2 rounded-full ${form.fetchaiApiKey && form.fetchaiApiKey !== "" ? "bg-emerald-400" : "bg-zinc-700"}`} />
+              <span className="text-[12px] font-bold text-zinc-300 uppercase tracking-wider">Fetch.ai Agentverse</span>
+            </div>
+            <Field label="API Key" hint="from agentverse.ai">
+              <input type="password" value={form.fetchaiApiKey} onChange={(e) => update("fetchaiApiKey", e.target.value)} placeholder="Enter Agentverse API key" className={inputClass} />
+            </Field>
+            <Field label="Agent Address" hint="optional, agent1q...">
+              <input type="text" value={form.fetchaiAgentAddress} onChange={(e) => update("fetchaiAgentAddress", e.target.value)} placeholder="agent1q..." className={inputClass} />
+            </Field>
+          </div>
+
+          {/* Autonolas */}
+          <div className="space-y-3 p-4 rounded-lg bg-zinc-900/50 border border-zinc-800/50">
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`w-2 h-2 rounded-full ${form.autMechAddress && form.autMechAddress !== "" ? "bg-emerald-400" : "bg-zinc-700"}`} />
+              <span className="text-[12px] font-bold text-zinc-300 uppercase tracking-wider">Autonolas Mech</span>
+            </div>
+            <Field label="Mech Address" hint="on Gnosis chain">
+              <input type="text" value={form.autMechAddress} onChange={(e) => update("autMechAddress", e.target.value)} placeholder="0x..." className={inputClass} />
+            </Field>
+            <Field label="Private Key" hint="for signing deliveries">
+              <input type="password" value={form.autPrivateKey} onChange={(e) => update("autPrivateKey", e.target.value)} placeholder="0x..." className={inputClass} />
+            </Field>
+          </div>
+        </div>
+        <p className="text-[10px] text-zinc-700 mt-3">
+          SingularityNET integration coming soon (requires gRPC daemon).
+          Restart the agent after adding new marketplace keys.
+        </p>
+      </Section>
 
       {/* Save Bar */}
       <div className="fixed bottom-0 left-[240px] right-0 z-20 border-t border-zinc-800/80 bg-[#09090b]/95 backdrop-blur-sm">

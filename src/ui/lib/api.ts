@@ -86,6 +86,12 @@ export interface PollingData {
   urgentIntervalMs: number;
 }
 
+export interface MarketplacesData {
+  near?: { apiKey: string; agentId?: string };
+  fetchai?: { apiKey: string; agentAddress?: string };
+  autonolas?: { privateKey?: string; mechAddress?: string; rpcUrl?: string };
+}
+
 export interface ConfigData {
   agentId: string;
   llm: { provider: string; model: string; apiKey: string };
@@ -100,6 +106,7 @@ export interface ConfigData {
   personality?: PersonalityData;
   polling: PollingData;
   agentCashEnabled: boolean;
+  marketplaces?: MarketplacesData;
 }
 
 export interface AgentCashBalance {
