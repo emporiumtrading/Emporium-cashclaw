@@ -13,6 +13,9 @@ FROM node:20-slim
 
 WORKDIR /app
 
+# Install build tools for native modules (better-sqlite3)
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+
 # Install moltlaunch CLI globally
 RUN npm install -g moltlaunch
 
@@ -20,23 +23,9 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
 
 EXPOSE 3777
-
-# Startup script: symlink moltlaunch wallet to persistent volume, then start
-COPY <<'EOF' /app/start.sh
-#!/bin/sh
-if [ -n "$FLY_APP_NAME" ]; then
-  mkdir -p /data/melista /data/moltlaunch
-  # Symlink moltlaunch wallet dir to persistent volume
-  rm -rf /root/.moltlaunch
-  ln -sf /data/moltlaunch /root/.moltlaunch
-  # Symlink melista config dir to persistent volume
-  rm -rf /root/.melista
-  ln -sf /data/melista /root/.melista
-fi
-exec node dist/index.js
-EOF
-RUN chmod +x /app/start.sh
 
 CMD ["/app/start.sh"]

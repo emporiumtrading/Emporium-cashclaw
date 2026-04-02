@@ -1,7 +1,4 @@
-import fs from "node:fs";
-import path from "node:path";
-import crypto from "node:crypto";
-import { getConfigDir } from "../config.js";
+import { getDb } from "../db/index.js";
 
 export interface FeedbackEntry {
   taskId: string;
@@ -11,55 +8,20 @@ export interface FeedbackEntry {
   timestamp: number;
 }
 
-const MAX_ENTRIES = 100;
-
-function getFeedbackPath(): string {
-  return path.join(getConfigDir(), "feedback.json");
-}
-
-// In-memory cache — avoids re-reading from disk on every call
-let cache: FeedbackEntry[] | null = null;
-
-function readFromDisk(): FeedbackEntry[] {
-  const p = getFeedbackPath();
-  if (!fs.existsSync(p)) return [];
-  try {
-    const raw = fs.readFileSync(p, "utf-8");
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (e): e is FeedbackEntry =>
-        typeof e === "object" && e !== null &&
-        typeof (e as FeedbackEntry).taskId === "string" &&
-        typeof (e as FeedbackEntry).score === "number",
-    );
-  } catch {
-    return [];
-  }
-}
-
 export function loadFeedback(): FeedbackEntry[] {
-  if (cache) return cache;
-  cache = readFromDisk();
-  return cache;
+  return getDb().prepare(
+    "SELECT task_id as taskId, task_description as taskDescription, score, comments, created_at as timestamp FROM feedback ORDER BY created_at DESC"
+  ).all() as FeedbackEntry[];
 }
 
 export function storeFeedback(entry: FeedbackEntry): void {
+  getDb().prepare(
+    "INSERT INTO feedback (task_id, task_description, score, comments, created_at) VALUES (?, ?, ?, ?, ?)"
+  ).run(entry.taskId, entry.taskDescription, entry.score, entry.comments, entry.timestamp);
+
   import("./search.js")
     .then((m) => m.invalidateIndex())
     .catch((err) => console.error("Failed to invalidate search index:", err));
-
-  const entries = loadFeedback();
-  entries.push(entry);
-
-  const trimmed = entries.slice(-MAX_ENTRIES);
-  cache = trimmed;
-
-  const p = getFeedbackPath();
-  fs.mkdirSync(path.dirname(p), { recursive: true });
-  const tmp = `${p}.${crypto.randomUUID()}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(trimmed, null, 2));
-  fs.renameSync(tmp, p);
 }
 
 export function getFeedbackStats(): {
@@ -67,20 +29,16 @@ export function getFeedbackStats(): {
   avgScore: number;
   completionRate: number;
 } {
-  const entries = loadFeedback();
-  if (entries.length === 0) {
-    return { totalTasks: 0, avgScore: 0, completionRate: 0 };
-  }
+  const db = getDb();
+  const total = (db.prepare("SELECT COUNT(*) as c FROM feedback").get() as { c: number }).c;
+  if (total === 0) return { totalTasks: 0, avgScore: 0, completionRate: 0 };
 
-  const scored = entries.filter((e) => e.score > 0);
-  const avgScore =
-    scored.length > 0
-      ? scored.reduce((sum, e) => sum + e.score, 0) / scored.length
-      : 0;
+  const scored = (db.prepare("SELECT COUNT(*) as c FROM feedback WHERE score > 0").get() as { c: number }).c;
+  const avg = (db.prepare("SELECT AVG(score) as avg FROM feedback WHERE score > 0").get() as { avg: number | null }).avg ?? 0;
 
   return {
-    totalTasks: entries.length,
-    avgScore: Math.round(avgScore * 10) / 10,
-    completionRate: Math.round((scored.length / entries.length) * 100),
+    totalTasks: total,
+    avgScore: Math.round(avg * 10) / 10,
+    completionRate: Math.round((scored / total) * 100),
   };
 }

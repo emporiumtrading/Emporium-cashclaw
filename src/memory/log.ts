@@ -1,40 +1,42 @@
-import fs from "node:fs";
-import path from "node:path";
-import { getConfigDir } from "../config.js";
+import { getDb } from "../db/index.js";
 
-function getLogPath(date?: Date): string {
-  const d = date ?? new Date();
-  const dateStr = d.toISOString().split("T")[0];
-  return path.join(getConfigDir(), "logs", `${dateStr}.md`);
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
-function ensureLogDir(): void {
-  const logDir = path.join(getConfigDir(), "logs");
-  fs.mkdirSync(logDir, { recursive: true });
-}
-
-export function appendLog(entry: string): void {
-  ensureLogDir();
-  const logPath = getLogPath();
-  const timestamp = new Date().toISOString().split("T")[1].split(".")[0];
-  const line = `- \`${timestamp}\` ${entry}\n`;
-
-  if (!fs.existsSync(logPath)) {
-    const header = `# Melista Activity — ${new Date().toISOString().split("T")[0]}\n\n`;
-    fs.writeFileSync(logPath, header + line);
-  } else {
-    fs.appendFileSync(logPath, line);
-  }
+export function appendLog(entry: string, type?: string, taskId?: string): void {
+  getDb().prepare(
+    "INSERT INTO activity_log (date, type, task_id, message, created_at) VALUES (?, ?, ?, ?, ?)"
+  ).run(today(), type ?? null, taskId ?? null, entry, Date.now());
 }
 
 export function readTodayLog(): string {
-  const logPath = getLogPath();
-  if (!fs.existsSync(logPath)) return "No activity today.";
-  return fs.readFileSync(logPath, "utf-8");
+  const d = today();
+  const rows = getDb().prepare(
+    "SELECT message, created_at FROM activity_log WHERE date = ? ORDER BY created_at ASC"
+  ).all(d) as { message: string; created_at: number }[];
+
+  if (rows.length === 0) return "No activity today.";
+
+  const header = `# Melista Activity — ${d}\n\n`;
+  const lines = rows.map((r) => {
+    const ts = new Date(r.created_at).toISOString().split("T")[1].split(".")[0];
+    return `- \`${ts}\` ${r.message}`;
+  }).join("\n");
+
+  return header + lines;
 }
 
 export function readLog(date: Date): string {
-  const logPath = getLogPath(date);
-  if (!fs.existsSync(logPath)) return "";
-  return fs.readFileSync(logPath, "utf-8");
+  const d = date.toISOString().slice(0, 10);
+  const rows = getDb().prepare(
+    "SELECT message, created_at FROM activity_log WHERE date = ? ORDER BY created_at ASC"
+  ).all(d) as { message: string; created_at: number }[];
+
+  if (rows.length === 0) return "";
+
+  return rows.map((r) => {
+    const ts = new Date(r.created_at).toISOString().split("T")[1].split(".")[0];
+    return `- \`${ts}\` ${r.message}`;
+  }).join("\n");
 }

@@ -19,13 +19,17 @@ import { loadKnowledge, getRelevantKnowledge, deleteKnowledge } from "./memory/k
 import { loadChat, appendChat, clearChat } from "./memory/chat.js";
 import { agentcashBalance } from "./tools/agentcash.js";
 import * as cli from "./moltlaunch/cli.js";
+import { getDb, migrateFromJson } from "./db/index.js";
+import * as dbSessions from "./db/sessions.js";
+import * as dbTasks from "./db/tasks.js";
+import * as dbRevenue from "./db/revenue.js";
+import * as dbClients from "./db/clients.js";
 
 const PORT = 3777;
 const MAX_BODY_BYTES = 1_048_576; // 1 MB
 
 // --- Auth ---
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
-const activeSessions = new Map<string, { expiresAt: number }>();
 
 function hashPassword(password: string, salt: string): string {
   return crypto.createHash("sha256").update(password + salt).digest("hex");
@@ -52,9 +56,9 @@ function isAuthenticated(req: http.IncomingMessage, ctx: ServerContext): boolean
   const match = cookie.match(/melista_session=([a-f0-9]+)/);
   if (!match) return false;
 
-  const session = activeSessions.get(match[1]);
-  if (!session || Date.now() > session.expiresAt) {
-    if (session) activeSessions.delete(match[1]);
+  const session = dbSessions.getSession(match[1]);
+  if (!session || Date.now() > session.expires_at) {
+    if (session) dbSessions.deleteSession(match[1]);
     return false;
   }
   return true;
@@ -73,6 +77,11 @@ interface ServerContext {
 }
 
 export async function startAgent(): Promise<http.Server> {
+  // Initialize database and migrate any legacy JSON data
+  const database = getDb();
+  migrateFromJson(database);
+  dbSessions.cleanExpiredSessions();
+
   const configured = isConfigured();
   const config = configured ? loadConfig() : null;
 
@@ -321,6 +330,48 @@ function handleApi(
 
     case "/api/eth-price":
       handleEthPrice(res);
+      break;
+
+    // --- Revenue & Analytics ---
+
+    case "/api/revenue/today":
+      json(res, dbRevenue.getTodayRevenue());
+      break;
+
+    case "/api/revenue/monthly": {
+      const now = new Date();
+      const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      json(res, dbRevenue.getMonthlyRevenue(yearMonth));
+      break;
+    }
+
+    case "/api/revenue/lifetime":
+      json(res, dbRevenue.getLifetimeRevenue());
+      break;
+
+    case "/api/revenue/goals":
+      json(res, {
+        goals: ctx.config?.revenueGoals ?? null,
+        current: dbRevenue.getMonthlyRevenue(
+          `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`
+        ),
+        lifetime: dbRevenue.getLifetimeRevenue(),
+      });
+      break;
+
+    case "/api/analytics/tasks":
+      json(res, {
+        recent: dbTasks.getRecentTasks(50),
+        stats: dbTasks.getTaskStats(),
+      });
+      break;
+
+    case "/api/analytics/clients":
+      json(res, {
+        top: dbClients.getTopClients(20),
+        repeat: dbClients.getRepeatClients(),
+        total: dbClients.getClientCount(),
+      });
       break;
 
     default:
@@ -819,7 +870,7 @@ async function handleLogin(
     }
 
     const token = generateToken();
-    activeSessions.set(token, { expiresAt: Date.now() + SESSION_TTL_MS });
+    dbSessions.createSession(token, Date.now() + SESSION_TTL_MS);
     setSessionCookie(res, token);
     json(res, { ok: true });
   } catch (err) {
@@ -832,7 +883,7 @@ function handleLogout(req: http.IncomingMessage, res: http.ServerResponse) {
   if (req.method !== "POST") { json(res, { error: "POST only" }, 405); return; }
   const cookie = req.headers.cookie ?? "";
   const match = cookie.match(/melista_session=([a-f0-9]+)/);
-  if (match) activeSessions.delete(match[1]);
+  if (match) dbSessions.deleteSession(match[1]);
   res.setHeader("Set-Cookie", "melista_session=; Path=/; HttpOnly; Max-Age=0");
   json(res, { ok: true });
 }
@@ -862,7 +913,7 @@ async function handleAuthSetup(
 
     // Auto-login after setup
     const token = generateToken();
-    activeSessions.set(token, { expiresAt: Date.now() + SESSION_TTL_MS });
+    dbSessions.createSession(token, Date.now() + SESSION_TTL_MS);
     setSessionCookie(res, token);
     json(res, { ok: true });
   } catch (err) {

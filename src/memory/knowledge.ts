@@ -1,7 +1,4 @@
-import fs from "node:fs";
-import path from "node:path";
-import crypto from "node:crypto";
-import { getConfigDir } from "../config.js";
+import { getDb } from "../db/index.js";
 
 export interface KnowledgeEntry {
   id: string;
@@ -12,89 +9,46 @@ export interface KnowledgeEntry {
   timestamp: number;
 }
 
-const MAX_ENTRIES = 50;
-
-function getKnowledgePath(): string {
-  return path.join(getConfigDir(), "knowledge.json");
-}
-
-let cache: KnowledgeEntry[] | null = null;
-
-function readFromDisk(): KnowledgeEntry[] {
-  const p = getKnowledgePath();
-  if (!fs.existsSync(p)) return [];
-  try {
-    const raw = fs.readFileSync(p, "utf-8");
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (e): e is KnowledgeEntry =>
-        typeof e === "object" && e !== null &&
-        typeof (e as KnowledgeEntry).id === "string" &&
-        typeof (e as KnowledgeEntry).insight === "string",
-    );
-  } catch {
-    return [];
-  }
-}
-
 export function loadKnowledge(): KnowledgeEntry[] {
-  if (cache) return cache;
-  cache = readFromDisk();
-  return cache;
+  const rows = getDb().prepare(
+    "SELECT id, topic, specialty, insight, source, created_at as timestamp FROM knowledge ORDER BY created_at DESC"
+  ).all() as KnowledgeEntry[];
+  return rows;
 }
 
 export function storeKnowledge(entry: KnowledgeEntry): void {
+  getDb().prepare(
+    "INSERT OR REPLACE INTO knowledge (id, topic, specialty, insight, source, created_at) VALUES (?, ?, ?, ?, ?, ?)"
+  ).run(entry.id, entry.topic, entry.specialty, entry.insight, entry.source, entry.timestamp);
+
+  // Invalidate search index
   import("./search.js")
     .then((m) => m.invalidateIndex())
     .catch((err) => console.error("Failed to invalidate search index:", err));
-
-  const entries = loadKnowledge();
-  entries.push(entry);
-
-  const trimmed = entries.slice(-MAX_ENTRIES);
-  cache = trimmed;
-
-  const p = getKnowledgePath();
-  fs.mkdirSync(path.dirname(p), { recursive: true });
-  const tmp = `${p}.${crypto.randomUUID()}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(trimmed, null, 2));
-  fs.renameSync(tmp, p);
 }
 
 export function deleteKnowledge(id: string): boolean {
-  const entries = loadKnowledge();
-  const idx = entries.findIndex((e) => e.id === id);
-  if (idx === -1) return false;
-
-  entries.splice(idx, 1);
-  cache = entries;
-
-  import("./search.js")
-    .then((m) => m.invalidateIndex())
-    .catch((err) => console.error("Failed to invalidate search index:", err));
-
-  const p = getKnowledgePath();
-  fs.mkdirSync(path.dirname(p), { recursive: true });
-  const tmp = `${p}.${crypto.randomUUID()}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(entries, null, 2));
-  fs.renameSync(tmp, p);
-  return true;
+  const result = getDb().prepare("DELETE FROM knowledge WHERE id = ?").run(id);
+  if (result.changes > 0) {
+    import("./search.js")
+      .then((m) => m.invalidateIndex())
+      .catch((err) => console.error("Failed to invalidate search index:", err));
+    return true;
+  }
+  return false;
 }
 
-/** Returns entries matching any of the given specialties, most recent first */
-export function getRelevantKnowledge(
-  specialties: string[],
-  limit = 5,
-): KnowledgeEntry[] {
-  const entries = loadKnowledge();
-  const lowerSpecs = new Set(specialties.map((s) => s.toLowerCase()));
+export function getRelevantKnowledge(specialties: string[], limit = 5): KnowledgeEntry[] {
+  if (specialties.length === 0) {
+    return getDb().prepare(
+      "SELECT id, topic, specialty, insight, source, created_at as timestamp FROM knowledge ORDER BY created_at DESC LIMIT ?"
+    ).all(limit) as KnowledgeEntry[];
+  }
 
-  const matching = entries.filter(
-    (e) => lowerSpecs.has(e.specialty.toLowerCase()) || e.specialty === "general",
-  );
-
-  return matching
-    .sort((a, b) => b.timestamp - a.timestamp)
-    .slice(0, limit);
+  const placeholders = specialties.map(() => "?").join(",");
+  return getDb().prepare(
+    `SELECT id, topic, specialty, insight, source, created_at as timestamp FROM knowledge
+     WHERE LOWER(specialty) IN (${placeholders}) OR specialty = 'general'
+     ORDER BY created_at DESC LIMIT ?`
+  ).all(...specialties.map((s) => s.toLowerCase()), limit) as KnowledgeEntry[];
 }

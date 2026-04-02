@@ -12,6 +12,9 @@ import {
   type MultiMarketplace,
   type MarketplaceTask,
 } from "./marketplaces/index.js";
+import * as dbTasks from "./db/tasks.js";
+import * as dbRevenue from "./db/revenue.js";
+import * as dbClients from "./db/clients.js";
 
 export interface HeartbeatState {
   running: boolean;
@@ -184,10 +187,28 @@ export function createHeartbeat(
   // --- Task handling (shared by WS + poll) ---
 
   function handleTaskEvent(task: Task) {
+    // Record task in database
+    dbTasks.upsertTask({
+      id: task.id,
+      marketplace: "moltlaunch",
+      global_id: task.id,
+      client_address: task.clientAddress,
+      description: task.task,
+      status: task.status,
+      category: task.category,
+      quoted_price: task.quotedPriceWei,
+    });
+
+    // Track client
+    if (task.clientAddress) {
+      dbClients.upsertClient(task.clientAddress, "moltlaunch");
+    }
+
     if (TERMINAL_STATUSES.has(task.status)) {
       if (task.status === "completed" && task.ratedScore !== undefined) {
         handleCompleted(task);
       }
+      dbTasks.upsertTask({ id: task.id, status: task.status, completed_at: Date.now() });
       state.activeTasks.delete(task.id);
       processedVersions.delete(task.id);
       return;
@@ -226,6 +247,18 @@ export function createHeartbeat(
           message: `Loop done in ${result.turns} turn(s): [${toolNames}]`,
         });
         appendLog(`Loop done for ${task.id}: ${result.turns} turns, tools=[${toolNames}]`);
+
+        // Record tool actions in DB
+        const hasQuote = result.toolCalls.some((tc) => tc.name === "quote_task");
+        const hasDecline = result.toolCalls.some((tc) => tc.name === "decline_task");
+        if (hasQuote) {
+          dbRevenue.recordTaskQuoted();
+          dbTasks.upsertTask({ id: task.id, status: "quoted", quoted_at: Date.now(), loop_turns: result.turns, tools_used: JSON.stringify(toolNames) });
+        }
+        if (hasDecline) {
+          dbRevenue.recordTaskDeclined();
+          dbTasks.upsertTask({ id: task.id, status: "declined" });
+        }
 
         for (const tc of result.toolCalls) {
           emit({
@@ -281,12 +314,36 @@ export function createHeartbeat(
       timestamp: Date.now(),
     });
 
+    // Record revenue in DB
+    const priceEth = task.quotedPriceWei
+      ? (parseInt(task.quotedPriceWei) / 1e18).toFixed(6)
+      : "0";
+    const priceUsd = parseFloat(priceEth) * 2050; // approximate ETH/USD
+    const costUsd = 0.06; // LLM cost estimate per task
+
+    dbTasks.upsertTask({
+      id: task.id,
+      status: "completed",
+      completed_at: Date.now(),
+      rated_score: task.ratedScore,
+      rated_comment: task.ratedComment,
+      revenue_eth: priceEth,
+      revenue_usd: priceUsd,
+      profit_usd: priceUsd - costUsd,
+    });
+
+    dbRevenue.recordTaskCompleted(priceUsd, priceEth, costUsd);
+
+    if (task.clientAddress) {
+      dbClients.recordClientCompletion(task.clientAddress, priceUsd, task.ratedScore);
+    }
+
     emit({
       type: "feedback",
       taskId: task.id,
-      message: `Completed — rated ${task.ratedScore}/5`,
+      message: `Completed — rated ${task.ratedScore}/5 — revenue $${priceUsd.toFixed(2)}`,
     });
-    appendLog(`Task ${task.id} completed — score ${task.ratedScore}/5`);
+    appendLog(`Task ${task.id} completed — score ${task.ratedScore}/5 — $${priceUsd.toFixed(2)}`);
   }
 
   function scheduleNext() {
