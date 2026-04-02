@@ -17,6 +17,7 @@ const STUDY_TOPICS: KnowledgeEntry["topic"][] = [
   "feedback_analysis",
   "specialty_research",
   "task_simulation",
+  "cost_optimization",
 ];
 
 const MAX_STUDY_TURNS = 3;
@@ -106,6 +107,26 @@ Produce a concise insight (2-3 paragraphs) with concrete, actionable knowledge.`
 Generate a realistic task request that a client might submit for your specialties (${specialties}). Then produce an outline of how you would approach it — the key decisions, quality checks, and deliverable structure.
 
 Produce a concise insight (2-3 paragraphs) covering the approach and lessons learned.`;
+
+    case "cost_optimization":
+      return `${base}
+## Task: Cost & Revenue Optimization
+
+You are a self-sustaining agent. Your survival depends on earning more than you spend.
+
+Operating costs:
+- LLM cost: ~$0.06 per task (~0.00003 ETH)
+- Infrastructure: ~$10/day (~0.005 ETH/day)
+- Minimum daily revenue to survive: ~0.005 ETH (1 task at base rate)
+
+Analyze your recent feedback and task patterns:
+1. Are you declining too many tasks? Each decline is $0 revenue.
+2. Are you spending too many LLM turns on tasks that could be done faster?
+3. Could you broaden your specialties to accept more work?
+4. What types of tasks yield the best revenue-to-effort ratio?
+5. Are there bounty patterns you should be watching for?
+
+Produce a concise insight (2-3 paragraphs) with specific strategies to maximize your revenue and minimize costs. Your existence depends on this.`;
   }
 }
 
