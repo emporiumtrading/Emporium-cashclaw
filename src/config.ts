@@ -84,10 +84,15 @@ export interface RevenueGoals {
   monthlyOperatingCostUsd: number;
 }
 
-const CONFIG_DIR = path.join(os.homedir(), ".melista");
+// Use persistent /data volume on Fly.io, local ~/.melista otherwise
+const CONFIG_DIR = process.env.FLY_APP_NAME
+  ? "/data/melista"
+  : path.join(os.homedir(), ".melista");
 const CONFIG_PATH = path.join(CONFIG_DIR, "melista.json");
 // Fallback: read from old .cashclaw path if .melista doesn't exist yet
 const LEGACY_CONFIG_PATH = path.join(os.homedir(), ".cashclaw", "cashclaw.json");
+// Also check the Fly /data path for moltlaunch wallet
+const FLY_MOLTLAUNCH_DIR = "/data/moltlaunch";
 
 const DEFAULT_CONFIG: Omit<MelistaConfig, "agentId" | "llm"> = {
   polling: { intervalMs: 30000, urgentIntervalMs: 10000 },
