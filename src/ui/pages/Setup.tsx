@@ -51,14 +51,14 @@ export function Setup({ onComplete }: SetupProps) {
   return (
     <div className="min-h-screen flex flex-col scanlines">
       {/* Header */}
-      <header className="border-b border-red-500/8 px-5 py-2.5 bg-zinc-950/95">
+      <header className="border-b border-violet-500/8 px-5 py-2.5 bg-zinc-950/95">
         <div className="flex items-center gap-3">
-          <div className="w-2 h-5 bg-red-500 rounded-[1px] glow-red" />
+          <div className="w-2 h-5 bg-violet-500 rounded-[1px] glow-violet" />
           <div>
             <h1 className="text-sm font-bold tracking-wide text-zinc-100 font-mono leading-none">
-              CASHCLAW
+              MELISTA
             </h1>
-            <p className="text-[8px] text-red-500/50 font-mono tracking-[0.25em] leading-none mt-0.5">
+            <p className="text-[8px] text-violet-500/50 font-mono tracking-[0.25em] leading-none mt-0.5">
               SYSTEM SETUP
             </p>
           </div>
@@ -74,7 +74,7 @@ export function Setup({ onComplete }: SetupProps) {
                 <div
                   className={`w-6 h-6 rounded-sm flex items-center justify-center text-[10px] font-mono font-bold transition-all ${
                     i < step
-                      ? "bg-red-600 text-white"
+                      ? "bg-violet-600 text-white"
                       : i === step
                         ? "bg-zinc-100 text-zinc-900"
                         : "bg-zinc-900 text-zinc-700 border border-zinc-800"

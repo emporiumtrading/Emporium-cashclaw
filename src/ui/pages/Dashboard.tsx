@@ -160,7 +160,7 @@ export function Dashboard() {
       <div className="text-center py-32">
         <p className="text-xl text-zinc-300 mb-2">Connection Lost</p>
         <p className="text-sm text-zinc-600 mb-6">{error}</p>
-        <p className="text-sm text-zinc-600">Run <code className="text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded-sm font-mono text-xs">cashclaw start</code> to reconnect</p>
+        <p className="text-sm text-zinc-600">Run <code className="text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded-sm font-mono text-xs">melista start</code> to reconnect</p>
       </div>
     );
   }
