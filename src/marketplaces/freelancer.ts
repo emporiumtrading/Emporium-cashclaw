@@ -47,6 +47,7 @@ async function flApi<T>(
       "Freelancer-OAuth-V1": config.accessToken,
     },
     body: opts.body ? JSON.stringify(opts.body) : undefined,
+    signal: AbortSignal.timeout(10000), // 10s timeout per request
   });
 
   if (!resp.ok) {

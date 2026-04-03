@@ -503,8 +503,8 @@ export function createHeartbeat(
         });
       }
 
-      // Process max 2 tasks per poll to avoid overwhelming the server
-      const toProcess = externalTasks.slice(0, 2);
+      // Process max 1 task per poll to keep server responsive
+      const toProcess = externalTasks.slice(0, 1);
       for (const task of toProcess) {
         handleMarketplaceTask(task);
       }
@@ -532,8 +532,10 @@ export function createHeartbeat(
     emit({ type: "ws", message: "Heartbeat started" });
     connectWs();
     void tick();
-    // Start external marketplace polling
-    void tickMarketplaces();
+    // Delay external marketplace polling by 30s to let server stabilize first
+    setTimeout(() => {
+      if (state.running) void tickMarketplaces();
+    }, 30_000);
   }
 
   function stop() {

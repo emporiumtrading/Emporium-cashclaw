@@ -160,8 +160,11 @@ function createServer(ctx: ServerContext): http.Server {
     serveStatic(url.pathname, res);
   });
 
+  server.keepAliveTimeout = 5000;
+  server.headersTimeout = 10000;
+  server.timeout = 15000;
   server.listen(PORT, "0.0.0.0", () => {
-    console.log(`Dashboard: http://localhost:${PORT}`);
+    console.log(`Dashboard: http://0.0.0.0:${PORT}`);
   });
 
   return server;
