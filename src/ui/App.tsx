@@ -51,9 +51,20 @@ export function App() {
 
   useEffect(() => {
     if (authState !== "authenticated") return;
-    api.getSetupStatus()
-      .then((s) => setConfigured(s.configured && s.mode === "running"))
-      .catch(() => setConfigured(false));
+    let attempts = 0;
+    function checkSetup() {
+      api.getSetupStatus()
+        .then((s) => setConfigured(s.configured && s.mode === "running"))
+        .catch(() => {
+          attempts++;
+          if (attempts < 3) {
+            setTimeout(checkSetup, 3000); // Retry after 3s
+          } else {
+            setConfigured(false); // Give up, show setup
+          }
+        });
+    }
+    checkSetup();
   }, [authState]);
 
   useEffect(() => {

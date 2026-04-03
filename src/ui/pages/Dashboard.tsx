@@ -98,11 +98,11 @@ export function Dashboard() {
       try {
         // Essential: status + events (every poll)
         const [s, t] = await Promise.all([
-          api.getStatus(),
-          api.getTasks(),
+          api.getStatus().catch(() => null),
+          api.getTasks().catch(() => ({ tasks: [], events: [] })),
         ]);
         if (!active) return;
-        setStatus(s);
+        if (s) setStatus(s);
         setEvents([...t.events].reverse());
         setError(null);
 
