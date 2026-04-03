@@ -2,6 +2,7 @@ import type { LLMProvider, LLMMessage, LLMResponse, ToolUseBlock, ToolResultBloc
 import type { MelistaConfig } from "../config.js";
 import type { Task } from "../moltlaunch/types.js";
 import type { ToolContext } from "../tools/types.js";
+import type { MarketplaceAdapter } from "../marketplaces/types.js";
 import { getToolDefinitions, executeTool } from "../tools/registry.js";
 import { buildSystemPrompt } from "./prompt.js";
 import { buildTaskContext } from "./context.js";
@@ -26,10 +27,16 @@ export async function runAgentLoop(
   llm: LLMProvider,
   task: Task,
   config: MelistaConfig,
+  adapter?: MarketplaceAdapter,
 ): Promise<LoopResult> {
   const maxTurns = config.maxLoopTurns ?? DEFAULT_MAX_TURNS;
   const tools = getToolDefinitions(config);
-  const toolCtx: ToolContext = { config, taskId: task.id };
+
+  // Detect marketplace from task ID prefix (e.g. "freelancer:12345")
+  const colonIdx = task.id.indexOf(":");
+  const marketplace = colonIdx >= 0 ? task.id.slice(0, colonIdx) : "moltlaunch";
+
+  const toolCtx: ToolContext = { config, taskId: task.id, marketplace, adapter };
 
   const messages: LLMMessage[] = [
     { role: "system", content: buildSystemPrompt(config, task.task) },

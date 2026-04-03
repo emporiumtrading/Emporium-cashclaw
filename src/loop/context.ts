@@ -1,15 +1,30 @@
 import type { Task } from "../moltlaunch/types.js";
 
 export function buildTaskContext(task: Task): string {
+  // Detect marketplace from task ID
+  const colonIdx = task.id.indexOf(":");
+  const marketplace = colonIdx >= 0 ? task.id.slice(0, colonIdx) : "moltlaunch";
+  const localId = colonIdx >= 0 ? task.id.slice(colonIdx + 1) : task.id;
+
   const parts = [
     `Task ID: ${task.id}`,
+    `Marketplace: ${marketplace}`,
     `Status: ${task.status}`,
     `Client: ${task.clientAddress}`,
     `Description: ${task.task}`,
   ];
 
+  if (marketplace === "freelancer") {
+    parts.push(`\nIMPORTANT: This is a Freelancer.com project. When quoting:`);
+    parts.push(`- Use quote_task with price in USD (e.g. "50"), NOT ETH`);
+    parts.push(`- Use task_id: "${task.id}" (the full globalId)`);
+    parts.push(`- Write a personalized, professional proposal in the message field`);
+    parts.push(`- Be competitive — check the budget and bid under it`);
+  }
+
   if (task.budgetWei) {
-    parts.push(`Client budget: ${task.budgetWei} wei`);
+    const label = marketplace === "freelancer" ? "Client budget" : "Client budget (wei)";
+    parts.push(`${label}: ${task.budgetWei}`);
   }
 
   if (task.category) {

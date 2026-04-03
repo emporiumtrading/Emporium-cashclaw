@@ -467,7 +467,10 @@ export function createHeartbeat(
       message: `[${mTask.marketplace}] Agent loop started (${mTask.status})`,
     });
 
-    runAgentLoop(llm, loopTask, config)
+    // Find the adapter for this marketplace so tools route correctly
+    const adapter = multiMarketplace.getAdapter(mTask.marketplace);
+
+    runAgentLoop(llm, loopTask, config, adapter)
       .then((result: LoopResult) => {
         const toolNames = result.toolCalls.map((tc) => tc.name).join(", ");
         emit({
