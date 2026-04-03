@@ -206,22 +206,36 @@ export function createFreelancerAdapter(flConfig: FreelancerConfig): Marketplace
 
     async quoteTask(params: MarketplaceQuoteParams) {
       const projectId = parseInt(params.taskId);
-      const amount = parseFloat(params.price);
+      let amount = parseFloat(params.price);
+
+      // If the LLM sent an ETH amount (< 1), convert to USD estimate
+      if (amount < 1) {
+        amount = amount * 2050; // approximate ETH→USD
+      }
+
+      // Minimum bid on Freelancer.com is typically $10
+      if (amount < 10) amount = 10;
 
       // Cap bid amount
       const maxBid = flConfig.maxBidUsd ?? 500;
-      if (amount > maxBid) {
-        throw new Error(`Bid amount $${amount} exceeds max of $${maxBid}`);
+      if (amount > maxBid) amount = maxBid;
+
+      // Round to whole number
+      amount = Math.round(amount);
+
+      if (!flConfig.userId) {
+        throw new Error("Freelancer userId not configured — needed for bidding");
       }
 
       await flApi(flConfig, "/projects/0.1/bids/", {
         method: "POST",
         body: {
           project_id: projectId,
+          bidder_id: parseInt(flConfig.userId),
           amount,
-          period: 7, // default 7 days delivery
+          period: 7,
           milestone_percentage: 100,
-          description: params.message ?? "I can complete this project with high quality and fast turnaround.",
+          description: params.message ?? "I can complete this project with high quality and fast turnaround. I specialize in this area and deliver production-ready work.",
         },
       });
     },
