@@ -176,7 +176,7 @@ export function Settings() {
       const result = await api.testLLM({
         provider: form.llmProvider,
         model: form.llmModel,
-        apiKey: form.llmApiKey === "***" ? config?.llm.apiKey ?? "" : form.llmApiKey,
+        apiKey: form.llmApiKey === "***" ? "***" : form.llmApiKey,
       });
       setLlmTestResult(result.response);
     } catch (err) {

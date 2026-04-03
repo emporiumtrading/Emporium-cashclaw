@@ -474,6 +474,16 @@ async function handleSetupApi(
       case "/api/setup/llm/test": {
         if (req.method !== "POST") { json(res, { error: "POST only" }, 405); return; }
         const body = parseJsonBody(await readBody(req)) as LLMConfig;
+        // Substitute real key if masked value sent
+        if (body.apiKey === "***" || !body.apiKey) {
+          const existingConfig = ctx.config ?? loadConfig();
+          if (existingConfig?.llm?.apiKey && existingConfig.llm.apiKey !== "***") {
+            body.apiKey = existingConfig.llm.apiKey;
+          } else {
+            json(res, { ok: false, response: "No API key configured. Enter a key first." }, 400);
+            break;
+          }
+        }
         const llm = createLLMProvider(body);
         const response = await llm.chat([
           { role: "user", content: "Say hello in one sentence." },
