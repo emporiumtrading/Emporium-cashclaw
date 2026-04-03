@@ -106,7 +106,7 @@ const DEFAULT_CONFIG: Omit<MelistaConfig, "agentId" | "llm"> = {
   specialties: [],
   autoQuote: true,
   autoWork: true,
-  maxConcurrentTasks: 1,
+  maxConcurrentTasks: 3,
   declineKeywords: [],
   learningEnabled: true,
   studyIntervalMs: 1_800_000, // 30 minutes

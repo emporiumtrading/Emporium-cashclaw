@@ -415,7 +415,7 @@ export function createHeartbeat(
   // --- Multi-marketplace polling (non-Moltlaunch) ---
 
   let marketplaceTimer: ReturnType<typeof setTimeout> | null = null;
-  const MARKETPLACE_POLL_INTERVAL_MS = 300_000; // Poll external marketplaces every 5 min
+  const MARKETPLACE_POLL_INTERVAL_MS = 120_000; // Poll external marketplaces every 2 min
 
   function handleMarketplaceTask(mTask: MarketplaceTask) {
     // Skip non-actionable statuses
