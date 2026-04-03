@@ -160,6 +160,21 @@ export interface LLMTestResult {
   response: string;
 }
 
+export interface FreelancerBid {
+  id: number;
+  projectId: number;
+  projectTitle: string;
+  projectStatus: string;
+  currency: string;
+  amount: number;
+  period: number;
+  description: string;
+  awardStatus: string | null;
+  paidStatus: string | null;
+  completeStatus: string | null;
+  submittedAt: number;
+}
+
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -195,6 +210,9 @@ export const api = {
   login: (password: string) => post<{ ok: boolean }>("/api/auth/login", { password }),
   logout: () => post<{ ok: boolean }>("/api/auth/logout"),
   setupAuth: (password: string) => post<{ ok: boolean }>("/api/auth/setup", { password }),
+
+  // Bids
+  getFreelancerBids: () => get<{ bids: FreelancerBid[]; error?: string }>("/api/bids/freelancer"),
 
   // Marketplace connection tests
   testFreelancer: () => post<{ ok: boolean; username?: string; userId?: number; error?: string }>("/api/test/freelancer"),

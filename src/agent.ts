@@ -340,6 +340,10 @@ function handleApi(
 
     // --- Marketplace Connection Tests ---
 
+    case "/api/bids/freelancer":
+      handleFreelancerBids(res, ctx);
+      break;
+
     case "/api/test/freelancer":
       if (req.method !== "POST") { json(res, { error: "POST only" }, 405); break; }
       handleTestFreelancer(res, ctx);
@@ -881,6 +885,62 @@ async function handleKnowledgeDelete(
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Invalid request";
     json(res, { error: msg }, 400);
+  }
+}
+
+// --- Marketplace data handlers ---
+
+async function handleFreelancerBids(res: http.ServerResponse, ctx: ServerContext) {
+  try {
+    const token = ctx.config?.marketplaces?.freelancer?.accessToken;
+    const userId = ctx.config?.marketplaces?.freelancer?.userId;
+    if (!token || !userId) { json(res, { bids: [], error: "Freelancer not configured" }); return; }
+
+    const resp = await fetch(`https://www.freelancer.com/api/projects/0.1/bids/?bidders[]=${userId}&limit=30&project_details=true`, {
+      headers: { "Freelancer-OAuth-V1": token },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!resp.ok) { json(res, { bids: [], error: `API ${resp.status}` }); return; }
+
+    const data = await resp.json() as {
+      status: string;
+      result: {
+        bids: Array<{
+          id: number;
+          project_id: number;
+          amount: number;
+          period: number;
+          description: string;
+          award_status: string | null;
+          time_submitted: number;
+          paid_status: string | null;
+          complete_status: string | null;
+        }>;
+        projects?: Record<string, { title: string; status: string; currency: { code: string } }>;
+      };
+    };
+
+    const bids = (data.result?.bids ?? []).map((b) => {
+      const project = data.result?.projects?.[String(b.project_id)];
+      return {
+        id: b.id,
+        projectId: b.project_id,
+        projectTitle: project?.title ?? `Project #${b.project_id}`,
+        projectStatus: project?.status ?? "unknown",
+        currency: project?.currency?.code ?? "USD",
+        amount: b.amount,
+        period: b.period,
+        description: b.description,
+        awardStatus: b.award_status,
+        paidStatus: b.paid_status,
+        completeStatus: b.complete_status,
+        submittedAt: b.time_submitted * 1000,
+      };
+    });
+
+    json(res, { bids });
+  } catch (err) {
+    json(res, { bids: [], error: err instanceof Error ? err.message : "Failed" });
   }
 }
 
