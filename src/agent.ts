@@ -335,6 +335,29 @@ function handleApi(
       handleEthPrice(res);
       break;
 
+    // --- Marketplace Connection Tests ---
+
+    case "/api/test/freelancer":
+      if (req.method !== "POST") { json(res, { error: "POST only" }, 405); break; }
+      handleTestFreelancer(res, ctx);
+      break;
+
+    case "/api/test/near": {
+      if (req.method !== "POST") { json(res, { error: "POST only" }, 405); break; }
+      const nearKey = ctx.config?.marketplaces?.near?.apiKey;
+      if (!nearKey) { json(res, { ok: false, error: "No NEAR API key configured" }, 400); break; }
+      json(res, { ok: true, message: "NEAR API key configured (connection test requires market.near.ai)" });
+      break;
+    }
+
+    case "/api/test/fetchai": {
+      if (req.method !== "POST") { json(res, { error: "POST only" }, 405); break; }
+      const fetchKey = ctx.config?.marketplaces?.fetchai?.apiKey;
+      if (!fetchKey) { json(res, { ok: false, error: "No Fetch.ai API key configured" }, 400); break; }
+      json(res, { ok: true, message: "Fetch.ai API key configured (connection test requires agentverse.ai)" });
+      break;
+    }
+
     // --- Revenue & Analytics ---
 
     case "/api/revenue/today":
@@ -855,6 +878,24 @@ async function handleKnowledgeDelete(
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Invalid request";
     json(res, { error: msg }, 400);
+  }
+}
+
+// --- Marketplace test handlers ---
+
+async function handleTestFreelancer(res: http.ServerResponse, ctx: ServerContext) {
+  try {
+    const token = ctx.config?.marketplaces?.freelancer?.accessToken;
+    if (!token) { json(res, { ok: false, error: "No Freelancer access token configured" }, 400); return; }
+    const resp = await fetch("https://www.freelancer.com/api/users/0.1/self/", {
+      headers: { "Freelancer-OAuth-V1": token },
+    });
+    if (!resp.ok) { json(res, { ok: false, error: `Freelancer API ${resp.status}` }); return; }
+    const data = await resp.json() as { result: { id: number; username: string; display_name?: string } };
+    const u = data.result;
+    json(res, { ok: true, username: u.username, userId: u.id, displayName: u.display_name });
+  } catch (err) {
+    json(res, { ok: false, error: err instanceof Error ? err.message : "Connection failed" });
   }
 }
 

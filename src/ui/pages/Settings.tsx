@@ -80,6 +80,8 @@ export function Settings() {
   const [message, setMessage] = useState("");
   const [llmTesting, setLlmTesting] = useState(false);
   const [llmTestResult, setLlmTestResult] = useState("");
+  const [flTesting, setFlTesting] = useState(false);
+  const [flTestResult, setFlTestResult] = useState("");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [ethPrice, setEthPrice] = useState<number>(0);
 
@@ -529,6 +531,27 @@ export function Settings() {
               <Field label="Max Bid (USD)" hint="safety cap per bid">
                 <input type="number" min={10} max={5000} value={form.flMaxBid} onChange={(e) => update("flMaxBid", Number(e.target.value))} className={inputClass} />
               </Field>
+            </div>
+            <div className="flex items-center gap-3 mt-3 pt-3 border-t border-zinc-800/30">
+              <button
+                onClick={() => {
+                  setFlTesting(true);
+                  setFlTestResult("");
+                  api.testFreelancer()
+                    .then((r) => setFlTestResult(r.ok ? `Connected: ${r.username} (ID: ${r.userId})` : (r.error ?? "Failed")))
+                    .catch((err) => setFlTestResult(err instanceof Error ? err.message : "Failed"))
+                    .finally(() => setFlTesting(false));
+                }}
+                disabled={flTesting}
+                className="px-3.5 py-2 rounded-md text-[12px] font-semibold transition-colors disabled:opacity-30 text-zinc-300 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/50"
+              >
+                {flTesting ? "Testing..." : "Test Connection"}
+              </button>
+              {flTestResult && (
+                <span className={`text-[11px] truncate flex-1 font-mono ${flTestResult.startsWith("Connected") ? "text-emerald-400" : "text-red-400"}`}>
+                  {flTestResult}
+                </span>
+              )}
             </div>
           </div>
         <p className="text-[10px] text-zinc-700 mt-3">

@@ -196,6 +196,11 @@ export const api = {
   logout: () => post<{ ok: boolean }>("/api/auth/logout"),
   setupAuth: (password: string) => post<{ ok: boolean }>("/api/auth/setup", { password }),
 
+  // Marketplace connection tests
+  testFreelancer: () => post<{ ok: boolean; username?: string; userId?: number; error?: string }>("/api/test/freelancer"),
+  testNear: () => post<{ ok: boolean; message?: string; error?: string }>("/api/test/near"),
+  testFetchai: () => post<{ ok: boolean; message?: string; error?: string }>("/api/test/fetchai"),
+
   // Setup
   getSetupStatus: () => get<SetupStatus>("/api/setup/status"),
   getWallet: () => get<WalletInfo>("/api/setup/wallet"),
