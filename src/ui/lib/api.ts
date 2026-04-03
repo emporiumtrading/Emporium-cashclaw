@@ -113,6 +113,7 @@ export interface ConfigData {
     monthlyStretchUsd: number;
     monthlyOperatingCostUsd: number;
   };
+  e2bApiKey?: string;
 }
 
 export interface AgentCashBalance {

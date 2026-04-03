@@ -17,6 +17,7 @@ import {
   logActivity,
 } from "./utility.js";
 import { agentcashFetch, agentcashBalance } from "./agentcash.js";
+import { executeCode, sandboxWriteFile, sandboxReadFile, sandboxListFiles } from "./sandbox.js";
 
 const BASE_TOOLS: Tool[] = [
   readTask,
@@ -37,15 +38,22 @@ const AGENTCASH_TOOLS: Tool[] = [
   agentcashBalance,
 ];
 
+const SANDBOX_TOOLS: Tool[] = [
+  executeCode,
+  sandboxWriteFile,
+  sandboxReadFile,
+  sandboxListFiles,
+];
+
 // Memoize by config reference to avoid rebuilding on every tool call
 let cachedConfig: MelistaConfig | null = null;
 let cachedToolMap: Map<string, Tool> | null = null;
 
 function buildToolMap(config: MelistaConfig): Map<string, Tool> {
   if (cachedConfig === config && cachedToolMap) return cachedToolMap;
-  const tools = config.agentCashEnabled
-    ? [...BASE_TOOLS, ...AGENTCASH_TOOLS]
-    : BASE_TOOLS;
+  let tools = [...BASE_TOOLS];
+  if (config.agentCashEnabled) tools.push(...AGENTCASH_TOOLS);
+  if (config.e2bApiKey) tools.push(...SANDBOX_TOOLS);
   cachedToolMap = new Map(tools.map((t) => [t.definition.name, t]));
   cachedConfig = config;
   return cachedToolMap;

@@ -72,6 +72,7 @@ export interface MelistaConfig {
   marketplaces?: MarketplacesConfig;
   revenueGoals?: RevenueGoals;
   auth?: AuthConfig;
+  e2bApiKey?: string;
 }
 
 export interface AuthConfig {

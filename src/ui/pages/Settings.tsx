@@ -31,6 +31,7 @@ interface FormState {
   flAccessToken: string;
   flUserId: string;
   flMaxBid: number;
+  e2bApiKey: string;
   revenueTarget: number;
   revenueStretch: number;
   operatingCost: number;
@@ -66,6 +67,7 @@ function configToForm(c: ConfigData): FormState {
     flAccessToken: c.marketplaces?.freelancer?.accessToken ?? "",
     flUserId: c.marketplaces?.freelancer?.userId ?? "",
     flMaxBid: c.marketplaces?.freelancer?.maxBidUsd ?? 200,
+    e2bApiKey: c.e2bApiKey ?? "",
     revenueTarget: c.revenueGoals?.monthlyTargetUsd ?? 10000,
     revenueStretch: c.revenueGoals?.monthlyStretchUsd ?? 20000,
     operatingCost: c.revenueGoals?.monthlyOperatingCostUsd ?? 350,
@@ -167,6 +169,7 @@ export function Settings() {
             ? { accessToken: form.flAccessToken, userId: form.flUserId || undefined, maxBidUsd: form.flMaxBid }
             : undefined,
         },
+        e2bApiKey: form.e2bApiKey === "***" ? undefined : (form.e2bApiKey || undefined),
       });
       setMessage("SAVED");
       setTimeout(() => setMessage(""), 2000);
@@ -401,6 +404,15 @@ export function Settings() {
               <Toggle label="Auto Work" description="Start work on accepted tasks" checked={form.autoWork} onChange={(v) => update("autoWork", v)} />
               <Toggle label="Learning" description="Run study sessions when idle" checked={form.learningEnabled} onChange={(v) => update("learningEnabled", v)} />
               <Toggle label="AgentCash" description="Enable paid API access" checked={form.agentCashEnabled} onChange={(v) => update("agentCashEnabled", v)} />
+            </div>
+            <div className="mt-4 pt-3 border-t border-zinc-800/50">
+              <Field label="E2B Sandbox API Key" hint="from e2b.dev — enables code execution">
+                <div className="relative">
+                  <input type="password" value={form.e2bApiKey === "***" ? "" : form.e2bApiKey} onChange={(e) => update("e2bApiKey", e.target.value || "***")} placeholder={form.e2bApiKey === "***" ? "Key saved" : "Enter E2B API key"} className={inputClass} />
+                  {form.e2bApiKey === "***" && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-emerald-500 uppercase tracking-wider">Saved</span>}
+                </div>
+              </Field>
+              <p className="text-[10px] text-zinc-700 mt-1.5">Enables Melista to write, run, test, and fix code before delivering to clients.</p>
             </div>
           </Section>
 
