@@ -303,10 +303,10 @@ export function Dashboard() {
                       {formatTime(ev.timestamp)}
                     </span>
                     <span className={`text-[11px] font-semibold font-mono shrink-0 w-9 uppercase ${EVENT_COLORS[ev.type] ?? "text-zinc-600"}`}>
-                      {EVENT_LABELS[ev.type] ?? ev.type.slice(0, 5)}
+                      {EVENT_LABELS[ev.type] ?? ev.type?.slice(0, 5) ?? "event"}
                     </span>
                     {ev.taskId && (
-                      <code className="text-[10px] text-zinc-700 font-mono shrink-0">{ev.taskId.slice(0, 8)}</code>
+                      <code className="text-[10px] text-zinc-700 font-mono shrink-0">{ev.taskId?.slice(0, 8)}</code>
                     )}
                     <span className="text-[13px] text-zinc-400 truncate pr-3">{ev.message}</span>
                   </div>
