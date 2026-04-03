@@ -4,10 +4,24 @@ function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+export interface ActivityLogEntry {
+  type: string;
+  taskId?: string;
+  message: string;
+  timestamp: number;
+}
+
 export function appendLog(entry: string, type?: string, taskId?: string): void {
   getDb().prepare(
     "INSERT INTO activity_log (date, type, task_id, message, created_at) VALUES (?, ?, ?, ?, ?)"
   ).run(today(), type ?? null, taskId ?? null, entry, Date.now());
+}
+
+/** Get recent activity events from SQLite (for Dashboard) */
+export function getRecentActivity(limit = 100): ActivityLogEntry[] {
+  return getDb().prepare(
+    "SELECT type, task_id as taskId, message, created_at as timestamp FROM activity_log ORDER BY created_at DESC LIMIT ?"
+  ).all(limit) as ActivityLogEntry[];
 }
 
 export function readTodayLog(): string {

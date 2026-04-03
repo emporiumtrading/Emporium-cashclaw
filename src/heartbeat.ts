@@ -91,6 +91,8 @@ export function createHeartbeat(
     if (state.events.length > 200) {
       state.events = state.events.slice(-200);
     }
+    // Persist to SQLite
+    appendLog(full.message, full.type, full.taskId);
     for (const fn of listeners) fn(full);
   }
 
@@ -111,7 +113,6 @@ export function createHeartbeat(
         wsReconnectDelay = WS_INITIAL_RECONNECT_MS;
         wsFailLogged = false;
         emit({ type: "ws", message: "WebSocket connected" });
-        appendLog("WebSocket connected");
       });
 
       ws.on("message", (data: WebSocket.Data) => {
@@ -236,7 +237,6 @@ export function createHeartbeat(
     processing.add(task.id);
 
     emit({ type: "loop_start", taskId: task.id, message: `Agent loop started (${task.status})` });
-    appendLog(`Agent loop started for ${task.id} (${task.status})`);
 
     runAgentLoop(llm, task, config)
       .then((result: LoopResult) => {
@@ -246,7 +246,6 @@ export function createHeartbeat(
           taskId: task.id,
           message: `Loop done in ${result.turns} turn(s): [${toolNames}]`,
         });
-        appendLog(`Loop done for ${task.id}: ${result.turns} turns, tools=[${toolNames}]`);
 
         // Record tool actions in DB
         const hasQuote = result.toolCalls.some((tc) => tc.name === "quote_task");
@@ -271,7 +270,6 @@ export function createHeartbeat(
       .catch((err: unknown) => {
         const msg = err instanceof Error ? err.message : String(err);
         emit({ type: "error", taskId: task.id, message: `Loop error: ${msg}` });
-        appendLog(`Loop error for ${task.id}: ${msg}`);
       })
       .finally(() => {
         processing.delete(task.id);
@@ -287,7 +285,6 @@ export function createHeartbeat(
       state.totalPolls++;
 
       emit({ type: "poll", message: `Polled inbox: ${tasks.length} task(s)` });
-      appendLog(`Polled inbox — ${tasks.length} task(s)`);
 
       for (const task of tasks) {
         handleTaskEvent(task);
@@ -295,7 +292,6 @@ export function createHeartbeat(
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       emit({ type: "error", message: `Poll error: ${msg}` });
-      appendLog(`Poll error: ${msg}`);
     }
 
     scheduleNext();
@@ -343,7 +339,6 @@ export function createHeartbeat(
       taskId: task.id,
       message: `Completed — rated ${task.ratedScore}/5 — revenue $${priceUsd.toFixed(2)}`,
     });
-    appendLog(`Task ${task.id} completed — score ${task.ratedScore}/5 — $${priceUsd.toFixed(2)}`);
   }
 
   function scheduleNext() {
@@ -397,7 +392,6 @@ export function createHeartbeat(
 
     studying = true;
     emit({ type: "study", message: "Starting study session..." });
-    appendLog("Study session started");
 
     try {
       const result = await runStudySession(llm, config);
@@ -408,11 +402,9 @@ export function createHeartbeat(
         type: "study",
         message: `Study complete: ${result.topic} (${result.tokensUsed} tokens)`,
       });
-      appendLog(`Study session complete: ${result.topic} — ${result.insight.slice(0, 100)}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       emit({ type: "error", message: `Study error: ${msg}` });
-      appendLog(`Study error: ${msg}`);
       // Avoid retrying immediately on failure
       state.lastStudyTime = Date.now();
     } finally {
@@ -474,7 +466,6 @@ export function createHeartbeat(
       taskId: mTask.globalId,
       message: `[${mTask.marketplace}] Agent loop started (${mTask.status})`,
     });
-    appendLog(`[${mTask.marketplace}] Loop started for ${mTask.id} (${mTask.status})`);
 
     runAgentLoop(llm, loopTask, config)
       .then((result: LoopResult) => {
@@ -484,12 +475,10 @@ export function createHeartbeat(
           taskId: mTask.globalId,
           message: `[${mTask.marketplace}] Loop done: ${result.turns} turn(s) [${toolNames}]`,
         });
-        appendLog(`[${mTask.marketplace}] Loop done for ${mTask.id}: ${result.turns} turns`);
       })
       .catch((err: unknown) => {
         const msg = err instanceof Error ? err.message : String(err);
         emit({ type: "error", taskId: mTask.globalId, message: `[${mTask.marketplace}] Loop error: ${msg}` });
-        appendLog(`[${mTask.marketplace}] Loop error for ${mTask.id}: ${msg}`);
       })
       .finally(() => {
         processing.delete(mTask.globalId);
@@ -512,7 +501,6 @@ export function createHeartbeat(
           type: "poll",
           message: `Multi-marketplace poll: ${externalTasks.length} task(s) from ${new Set(externalTasks.map((t) => t.marketplace)).size} platform(s)`,
         });
-        appendLog(`Multi-marketplace poll: ${externalTasks.length} external task(s)`);
       }
 
       for (const task of externalTasks) {
@@ -539,7 +527,7 @@ export function createHeartbeat(
     if (state.lastStudyTime === 0) {
       state.lastStudyTime = Date.now();
     }
-    appendLog("Heartbeat started");
+    emit({ type: "ws", message: "Heartbeat started" });
     connectWs();
     void tick();
     // Start external marketplace polling
@@ -557,7 +545,7 @@ export function createHeartbeat(
       clearTimeout(marketplaceTimer);
       marketplaceTimer = null;
     }
-    appendLog("Heartbeat stopped");
+    emit({ type: "ws", message: "Heartbeat stopped" });
   }
 
   return { state, start, stop, onEvent };

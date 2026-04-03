@@ -13,7 +13,7 @@ import {
 } from "./config.js";
 import { createLLMProvider } from "./llm/index.js";
 import { createHeartbeat, type Heartbeat } from "./heartbeat.js";
-import { readTodayLog } from "./memory/log.js";
+import { readTodayLog, getRecentActivity } from "./memory/log.js";
 import { getFeedbackStats, loadFeedback } from "./memory/feedback.js";
 import { loadKnowledge, getRelevantKnowledge, deleteKnowledge } from "./memory/knowledge.js";
 import { loadChat, appendChat, clearChat } from "./memory/chat.js";
@@ -234,7 +234,7 @@ function handleApi(
     case "/api/tasks":
       json(res, {
         tasks: [...ctx.heartbeat.state.activeTasks.values()],
-        events: ctx.heartbeat.state.events.slice(-50),
+        events: getRecentActivity(100),
       });
       break;
 
