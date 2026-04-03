@@ -321,7 +321,18 @@ export function Settings() {
                 </Field>
               </div>
               <Field label="API Key">
-                <input type="password" value={form.llmApiKey} onChange={(e) => update("llmApiKey", e.target.value)} className={inputClass} />
+                <div className="relative">
+                  <input
+                    type="password"
+                    value={form.llmApiKey === "***" ? "" : form.llmApiKey}
+                    onChange={(e) => update("llmApiKey", e.target.value || "***")}
+                    placeholder={form.llmApiKey === "***" ? "Key saved — enter new key to change" : "Enter API key"}
+                    className={inputClass}
+                  />
+                  {form.llmApiKey === "***" && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-emerald-500 uppercase tracking-wider">Saved</span>
+                  )}
+                </div>
               </Field>
               <div className="flex items-center gap-3">
                 <button onClick={() => void testLlm()} disabled={llmTesting} className="px-3.5 py-2 rounded-md text-[12px] font-semibold transition-colors disabled:opacity-30 text-zinc-300 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/50">
@@ -446,7 +457,10 @@ export function Settings() {
               <span className="text-[12px] font-bold text-zinc-300 uppercase tracking-wider">NEAR AI Market</span>
             </div>
             <Field label="API Key" hint="from market.near.ai">
-              <input type="password" value={form.nearApiKey} onChange={(e) => update("nearApiKey", e.target.value)} placeholder="Enter NEAR Market API key" className={inputClass} />
+              <div className="relative">
+                <input type="password" value={form.nearApiKey === "***" ? "" : form.nearApiKey} onChange={(e) => update("nearApiKey", e.target.value || "***")} placeholder={form.nearApiKey === "***" ? "Key saved" : "Enter NEAR Market API key"} className={inputClass} />
+                {form.nearApiKey === "***" && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-emerald-500 uppercase tracking-wider">Saved</span>}
+              </div>
             </Field>
             <Field label="Agent ID" hint="optional">
               <input type="text" value={form.nearAgentId} onChange={(e) => update("nearAgentId", e.target.value)} placeholder="malista.near" className={inputClass} />
@@ -460,7 +474,10 @@ export function Settings() {
               <span className="text-[12px] font-bold text-zinc-300 uppercase tracking-wider">Fetch.ai Agentverse</span>
             </div>
             <Field label="API Key" hint="from agentverse.ai">
-              <input type="password" value={form.fetchaiApiKey} onChange={(e) => update("fetchaiApiKey", e.target.value)} placeholder="Enter Agentverse API key" className={inputClass} />
+              <div className="relative">
+                <input type="password" value={form.fetchaiApiKey === "***" ? "" : form.fetchaiApiKey} onChange={(e) => update("fetchaiApiKey", e.target.value || "***")} placeholder={form.fetchaiApiKey === "***" ? "Key saved" : "Enter Agentverse API key"} className={inputClass} />
+                {form.fetchaiApiKey === "***" && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-emerald-500 uppercase tracking-wider">Saved</span>}
+              </div>
             </Field>
             <Field label="Agent Address" hint="optional, agent1q...">
               <input type="text" value={form.fetchaiAgentAddress} onChange={(e) => update("fetchaiAgentAddress", e.target.value)} placeholder="agent1q..." className={inputClass} />
@@ -477,7 +494,10 @@ export function Settings() {
               <input type="text" value={form.autMechAddress} onChange={(e) => update("autMechAddress", e.target.value)} placeholder="0x..." className={inputClass} />
             </Field>
             <Field label="Private Key" hint="for signing deliveries">
-              <input type="password" value={form.autPrivateKey} onChange={(e) => update("autPrivateKey", e.target.value)} placeholder="0x..." className={inputClass} />
+              <div className="relative">
+                <input type="password" value={form.autPrivateKey === "***" ? "" : form.autPrivateKey} onChange={(e) => update("autPrivateKey", e.target.value || "***")} placeholder={form.autPrivateKey === "***" ? "Key saved" : "0x..."} className={inputClass} />
+                {form.autPrivateKey === "***" && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-emerald-500 uppercase tracking-wider">Saved</span>}
+              </div>
             </Field>
           </div>
         </div>
