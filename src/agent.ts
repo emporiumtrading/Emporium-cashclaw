@@ -253,6 +253,9 @@ function handleApi(
         autonolas: ctx.config.marketplaces.autonolas
           ? { ...ctx.config.marketplaces.autonolas, privateKey: ctx.config.marketplaces.autonolas.privateKey ? "***" : "" }
           : undefined,
+        freelancer: ctx.config.marketplaces.freelancer
+          ? { ...ctx.config.marketplaces.freelancer, accessToken: ctx.config.marketplaces.freelancer.accessToken ? "***" : "" }
+          : undefined,
       } : undefined;
       json(res, {
         ...ctx.config,
@@ -637,6 +640,9 @@ async function handleConfigUpdate(
       }
       if (incoming.autonolas) {
         if (incoming.autonolas.privateKey === "***") incoming.autonolas.privateKey = existing.autonolas?.privateKey ?? "";
+      }
+      if (incoming.freelancer) {
+        if (incoming.freelancer.accessToken === "***") incoming.freelancer.accessToken = existing.freelancer?.accessToken ?? "";
       }
       ctx.config.marketplaces = { ...existing, ...updates.marketplaces };
     }

@@ -46,6 +46,12 @@ export interface MarketplacesConfig {
     orgId?: string;
     serviceId?: string;
   };
+  freelancer?: {
+    accessToken: string;
+    userId?: string;
+    searchKeywords?: string[];
+    maxBidUsd?: number;
+  };
 }
 
 export interface MelistaConfig {

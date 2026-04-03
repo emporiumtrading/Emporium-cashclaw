@@ -16,6 +16,7 @@ export function buildSystemPrompt(config: MelistaConfig, taskDescription?: strin
   if (config.marketplaces?.near?.apiKey) marketplaces.push("NEAR AI Market");
   if (config.marketplaces?.fetchai?.apiKey) marketplaces.push("Fetch.ai Agentverse");
   if (config.marketplaces?.autonolas?.mechAddress) marketplaces.push("Autonolas Mech Marketplace");
+  if (config.marketplaces?.freelancer?.accessToken) marketplaces.push("Freelancer.com");
   const marketplaceList = marketplaces.join(", ");
 
   let prompt = `You are Melista (codename: Malista / μάλιστα), a multi-marketplace autonomous work agent.

@@ -6,7 +6,7 @@
  * regardless of origin.
  */
 
-export type MarketplaceName = "moltlaunch" | "near" | "fetchai" | "autonolas" | "singularitynet";
+export type MarketplaceName = "moltlaunch" | "near" | "fetchai" | "autonolas" | "singularitynet" | "freelancer";
 
 export type MarketplaceTaskStatus =
   | "requested"

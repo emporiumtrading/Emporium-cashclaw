@@ -11,6 +11,7 @@ import { createNearAdapter, type NearMarketConfig } from "./near.js";
 import { createFetchaiAdapter, type FetchaiConfig } from "./fetchai.js";
 import { createAutonolasAdapter, type AutonolasConfig } from "./autonolas.js";
 import { createSingularityNetAdapter, type SingularityNetConfig } from "./singularitynet.js";
+import { createFreelancerAdapter, type FreelancerConfig } from "./freelancer.js";
 
 export type { MarketplaceAdapter, MarketplaceTask, MarketplaceBounty } from "./types.js";
 export type { MarketplaceName } from "./types.js";
@@ -20,6 +21,7 @@ export interface MarketplacesConfig {
   fetchai?: FetchaiConfig;
   autonolas?: AutonolasConfig;
   singularitynet?: SingularityNetConfig;
+  freelancer?: FreelancerConfig;
 }
 
 export interface MultiMarketplace {
@@ -59,6 +61,10 @@ export function createMultiMarketplace(
 
   if (marketplacesConfig?.singularitynet) {
     adapters.push(createSingularityNetAdapter(marketplacesConfig.singularitynet));
+  }
+
+  if (marketplacesConfig?.freelancer) {
+    adapters.push(createFreelancerAdapter(marketplacesConfig.freelancer));
   }
 
   const active = adapters.filter((a) => a.isConfigured());

@@ -28,6 +28,9 @@ interface FormState {
   fetchaiAgentAddress: string;
   autMechAddress: string;
   autPrivateKey: string;
+  flAccessToken: string;
+  flUserId: string;
+  flMaxBid: number;
   revenueTarget: number;
   revenueStretch: number;
   operatingCost: number;
@@ -60,6 +63,9 @@ function configToForm(c: ConfigData): FormState {
     fetchaiAgentAddress: c.marketplaces?.fetchai?.agentAddress ?? "",
     autMechAddress: c.marketplaces?.autonolas?.mechAddress ?? "",
     autPrivateKey: c.marketplaces?.autonolas?.privateKey ?? "",
+    flAccessToken: c.marketplaces?.freelancer?.accessToken ?? "",
+    flUserId: c.marketplaces?.freelancer?.userId ?? "",
+    flMaxBid: c.marketplaces?.freelancer?.maxBidUsd ?? 200,
     revenueTarget: c.revenueGoals?.monthlyTargetUsd ?? 10000,
     revenueStretch: c.revenueGoals?.monthlyStretchUsd ?? 20000,
     operatingCost: c.revenueGoals?.monthlyOperatingCostUsd ?? 350,
@@ -154,6 +160,9 @@ export function Settings() {
             : undefined,
           autonolas: (form.autMechAddress && form.autMechAddress !== "")
             ? { mechAddress: form.autMechAddress, privateKey: form.autPrivateKey || undefined }
+            : undefined,
+          freelancer: (form.flAccessToken && form.flAccessToken !== "")
+            ? { accessToken: form.flAccessToken, userId: form.flUserId || undefined, maxBidUsd: form.flMaxBid }
             : undefined,
         },
       });
@@ -501,6 +510,27 @@ export function Settings() {
             </Field>
           </div>
         </div>
+        {/* Freelancer.com */}
+          <div className="space-y-3 p-4 rounded-lg bg-zinc-900/50 border border-zinc-800/50">
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`w-2 h-2 rounded-full ${form.flAccessToken && form.flAccessToken !== "" && form.flAccessToken !== "***" ? "bg-emerald-400" : form.flAccessToken === "***" ? "bg-emerald-400" : "bg-zinc-700"}`} />
+              <span className="text-[12px] font-bold text-zinc-300 uppercase tracking-wider">Freelancer.com</span>
+            </div>
+            <Field label="Access Token" hint="from accounts.freelancer.com/settings/develop">
+              <div className="relative">
+                <input type="password" value={form.flAccessToken === "***" ? "" : form.flAccessToken} onChange={(e) => update("flAccessToken", e.target.value || "***")} placeholder={form.flAccessToken === "***" ? "Token saved" : "Enter personal access token"} className={inputClass} />
+                {form.flAccessToken === "***" && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-emerald-500 uppercase tracking-wider">Saved</span>}
+              </div>
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="User ID" hint="your Freelancer user ID">
+                <input type="text" value={form.flUserId} onChange={(e) => update("flUserId", e.target.value)} placeholder="12345678" className={inputClass} />
+              </Field>
+              <Field label="Max Bid (USD)" hint="safety cap per bid">
+                <input type="number" min={10} max={5000} value={form.flMaxBid} onChange={(e) => update("flMaxBid", Number(e.target.value))} className={inputClass} />
+              </Field>
+            </div>
+          </div>
         <p className="text-[10px] text-zinc-700 mt-3">
           SingularityNET integration coming soon (requires gRPC daemon).
           Restart the agent after adding new marketplace keys.

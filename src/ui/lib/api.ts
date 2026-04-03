@@ -90,6 +90,7 @@ export interface MarketplacesData {
   near?: { apiKey: string; agentId?: string };
   fetchai?: { apiKey: string; agentAddress?: string };
   autonolas?: { privateKey?: string; mechAddress?: string; rpcUrl?: string };
+  freelancer?: { accessToken: string; userId?: string; maxBidUsd?: number };
 }
 
 export interface ConfigData {
