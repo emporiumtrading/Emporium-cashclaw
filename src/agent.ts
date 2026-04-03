@@ -160,7 +160,7 @@ function createServer(ctx: ServerContext): http.Server {
     serveStatic(url.pathname, res);
   });
 
-  server.listen(PORT, () => {
+  server.listen(PORT, "0.0.0.0", () => {
     console.log(`Dashboard: http://localhost:${PORT}`);
   });
 

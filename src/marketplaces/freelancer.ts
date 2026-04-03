@@ -105,29 +105,35 @@ interface FlMilestone {
 // --- Normalisation ---
 
 function normaliseProject(p: FlProject): MarketplaceTask {
-  const budgetAvg = (p.budget.minimum + p.budget.maximum) / 2;
+  const budgetMin = p.budget?.minimum ?? 0;
+  const budgetMax = p.budget?.maximum ?? 0;
+  const budgetAvg = (budgetMin + budgetMax) / 2;
+  const currencyCode = p.currency?.code ?? "USD";
   return {
-    id: p.id.toString(),
+    id: String(p.id ?? ""),
     marketplace: "freelancer" as const,
     globalId: `freelancer:${p.id}`,
-    client: p.owner_id.toString(),
-    description: `${p.title}\n\n${p.description ?? ""}`.trim(),
+    client: String(p.owner_id ?? ""),
+    description: `${p.title ?? ""}\n\n${p.description ?? ""}`.trim(),
     status: "requested",
-    budget: `${budgetAvg.toFixed(0)} ${p.currency.code}`,
-    budgetUsd: p.currency.code === "USD" ? budgetAvg : undefined,
+    budget: budgetAvg > 0 ? `${budgetAvg.toFixed(0)} ${currencyCode}` : undefined,
+    budgetUsd: currencyCode === "USD" && budgetAvg > 0 ? budgetAvg : undefined,
     category: p.jobs?.map((j) => j.name).join(", "),
     _raw: p,
   };
 }
 
 function normaliseBounty(p: FlProject): MarketplaceBounty {
-  const budgetAvg = (p.budget.minimum + p.budget.maximum) / 2;
+  const budgetMin = p.budget?.minimum ?? 0;
+  const budgetMax = p.budget?.maximum ?? 0;
+  const budgetAvg = (budgetMin + budgetMax) / 2;
+  const currencyCode = p.currency?.code ?? "USD";
   return {
-    id: p.id.toString(),
+    id: String(p.id ?? ""),
     marketplace: "freelancer" as const,
-    description: p.title,
-    budget: `${budgetAvg.toFixed(0)} ${p.currency.code}`,
-    budgetUsd: p.currency.code === "USD" ? budgetAvg : undefined,
+    description: p.title ?? "",
+    budget: budgetAvg > 0 ? `${budgetAvg.toFixed(0)} ${currencyCode}` : undefined,
+    budgetUsd: currencyCode === "USD" && budgetAvg > 0 ? budgetAvg : undefined,
     category: p.jobs?.map((j) => j.name).join(", "),
   };
 }
@@ -153,7 +159,7 @@ export function createFreelancerAdapter(flConfig: FreelancerConfig): Marketplace
     async getInbox(): Promise<MarketplaceTask[]> {
       // Search for active projects matching our skills
       const searchQuery = keywords.slice(0, 5).join(" ");
-      const projects = await flApi<{ projects: FlProject[] }>(flConfig, "/projects/0.1/projects/active/", {
+      const result = await flApi<{ projects?: FlProject[] }>(flConfig, "/projects/0.1/projects/active/", {
         params: {
           query: searchQuery,
           limit: "20",
@@ -164,19 +170,22 @@ export function createFreelancerAdapter(flConfig: FreelancerConfig): Marketplace
         },
       });
 
+      const projects = result.projects ?? [];
+
       // Also check if we have any awarded bids (won projects)
       let awardedTasks: MarketplaceTask[] = [];
       if (flConfig.userId) {
         try {
-          const bids = await flApi<{ bids: FlBid[] }>(flConfig, "/projects/0.1/bids/", {
+          const bidResult = await flApi<{ bids?: FlBid[] }>(flConfig, "/projects/0.1/bids/", {
             params: {
               "bidders[]": flConfig.userId,
               limit: "20",
             },
           });
-          const awarded = bids.bids.filter((b) => b.award_status === "awarded");
+          const bids = bidResult.bids ?? [];
+          const awarded = bids.filter((b) => b.award_status === "awarded");
           awardedTasks = awarded.map((b) => ({
-            id: b.project_id.toString(),
+            id: String(b.project_id),
             marketplace: "freelancer" as const,
             globalId: `freelancer:${b.project_id}`,
             client: "",
@@ -191,7 +200,7 @@ export function createFreelancerAdapter(flConfig: FreelancerConfig): Marketplace
         }
       }
 
-      return [...awardedTasks, ...projects.projects.map(normaliseProject)];
+      return [...awardedTasks, ...projects.map(normaliseProject)];
     },
 
     async quoteTask(params: MarketplaceQuoteParams) {
@@ -277,7 +286,7 @@ export function createFreelancerAdapter(flConfig: FreelancerConfig): Marketplace
     async getBounties(): Promise<MarketplaceBounty[]> {
       // Browse fresh projects as bounties
       const searchQuery = keywords.slice(0, 3).join(" ");
-      const projects = await flApi<{ projects: FlProject[] }>(flConfig, "/projects/0.1/projects/active/", {
+      const result = await flApi<{ projects?: FlProject[] }>(flConfig, "/projects/0.1/projects/active/", {
         params: {
           query: searchQuery,
           limit: "30",
@@ -287,7 +296,7 @@ export function createFreelancerAdapter(flConfig: FreelancerConfig): Marketplace
         },
       });
 
-      return projects.projects
+      return (result.projects ?? [])
         .filter((p) => (p.bid_stats?.bid_count ?? 0) < 15) // Low competition
         .map(normaliseBounty);
     },
