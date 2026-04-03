@@ -63,7 +63,7 @@ export function App() {
       api.getWalletCached().then(setWallet).catch(() => {});
     }
     poll();
-    const interval = setInterval(poll, 5000);
+    const interval = setInterval(poll, 15000);
     return () => clearInterval(interval);
   }, [configured]);
 

@@ -162,7 +162,7 @@ export function createFreelancerAdapter(flConfig: FreelancerConfig): Marketplace
       const result = await flApi<{ projects?: FlProject[] }>(flConfig, "/projects/0.1/projects/active/", {
         params: {
           query: searchQuery,
-          limit: "20",
+          limit: "5",
           sort_field: "time_submitted",
           full_description: "true",
           job_details: "true",
@@ -179,7 +179,7 @@ export function createFreelancerAdapter(flConfig: FreelancerConfig): Marketplace
           const bidResult = await flApi<{ bids?: FlBid[] }>(flConfig, "/projects/0.1/bids/", {
             params: {
               "bidders[]": flConfig.userId,
-              limit: "20",
+              limit: "5",
             },
           });
           const bids = bidResult.bids ?? [];

@@ -234,7 +234,7 @@ function handleApi(
     case "/api/tasks":
       json(res, {
         tasks: [...ctx.heartbeat.state.activeTasks.values()],
-        events: getRecentActivity(100),
+        events: getRecentActivity(30),
       });
       break;
 

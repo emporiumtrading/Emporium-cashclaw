@@ -92,33 +92,44 @@ export function Dashboard() {
   useEffect(() => {
     let active = true;
 
+    let pollCount = 0;
+
     async function poll() {
       try {
-        const [s, t, st, w, k, f, cfg] = await Promise.all([
+        // Essential: status + events (every poll)
+        const [s, t] = await Promise.all([
           api.getStatus(),
           api.getTasks(),
-          api.getStats(),
-          api.getWalletCached().catch(() => null),
-          api.getKnowledge().catch(() => ({ entries: [] })),
-          api.getFeedback().catch(() => ({ entries: [] })),
-          api.getConfig().catch(() => null),
         ]);
         if (!active) return;
         setStatus(s);
         setEvents([...t.events].reverse());
-        setStats(st);
-        setWallet(w);
-        setKnowledge(k.entries);
-        setFeedback(f.entries);
         setError(null);
 
-        const cashEnabled = cfg?.agentCashEnabled ?? false;
-        setAgentCashEnabled(cashEnabled);
-        if (cashEnabled) {
-          api.getAgentCashBalance()
-            .then((b) => { if (active) setAgentCashBalance(b); })
-            .catch(() => { if (active) setAgentCashBalance(null); });
+        // Secondary: stats, wallet, knowledge, feedback (every 3rd poll = ~30s)
+        if (pollCount % 3 === 0) {
+          const [st, w, k, f, cfg] = await Promise.all([
+            api.getStats().catch(() => null),
+            api.getWalletCached().catch(() => null),
+            api.getKnowledge().catch(() => ({ entries: [] })),
+            api.getFeedback().catch(() => ({ entries: [] })),
+            api.getConfig().catch(() => null),
+          ]);
+          if (!active) return;
+          if (st) setStats(st);
+          setWallet(w);
+          setKnowledge(k.entries);
+          setFeedback(f.entries);
+
+          const cashEnabled = cfg?.agentCashEnabled ?? false;
+          setAgentCashEnabled(cashEnabled);
+          if (cashEnabled) {
+            api.getAgentCashBalance()
+              .then((b) => { if (active) setAgentCashBalance(b); })
+              .catch(() => { if (active) setAgentCashBalance(null); });
+          }
         }
+        pollCount++;
       } catch (err) {
         if (!active) return;
         setError(err instanceof Error ? err.message : "Connection failed");
@@ -126,7 +137,7 @@ export function Dashboard() {
     }
 
     void poll();
-    const interval = setInterval(() => void poll(), 3000);
+    const interval = setInterval(() => void poll(), 10000);
 
     // Fetch ETH price once (has its own server-side cache)
     api.getEthPrice()

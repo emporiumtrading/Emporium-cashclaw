@@ -415,7 +415,7 @@ export function createHeartbeat(
   // --- Multi-marketplace polling (non-Moltlaunch) ---
 
   let marketplaceTimer: ReturnType<typeof setTimeout> | null = null;
-  const MARKETPLACE_POLL_INTERVAL_MS = 60_000; // Poll external marketplaces every 60s
+  const MARKETPLACE_POLL_INTERVAL_MS = 300_000; // Poll external marketplaces every 5 min
 
   function handleMarketplaceTask(mTask: MarketplaceTask) {
     // Skip non-actionable statuses
@@ -503,7 +503,9 @@ export function createHeartbeat(
         });
       }
 
-      for (const task of externalTasks) {
+      // Process max 2 tasks per poll to avoid overwhelming the server
+      const toProcess = externalTasks.slice(0, 2);
+      for (const task of toProcess) {
         handleMarketplaceTask(task);
       }
     } catch (err) {
