@@ -411,6 +411,20 @@ function handleApi(
       });
       break;
 
+    // --- Whop Products & Orders ---
+
+    case "/api/whop/products":
+      handleWhopProducts(res, ctx);
+      break;
+
+    case "/api/whop/orders":
+      handleWhopOrders(res, ctx);
+      break;
+
+    case "/api/whop/revenue":
+      handleWhopRevenue(res, ctx);
+      break;
+
     default:
       json(res, { error: "Not found" }, 404);
   }
@@ -957,6 +971,77 @@ async function handleFreelancerBids(res: http.ServerResponse, ctx: ServerContext
     json(res, { bids });
   } catch (err) {
     json(res, { bids: [], error: err instanceof Error ? err.message : "Failed" });
+  }
+}
+
+// --- Whop data handlers ---
+
+async function handleWhopProducts(res: http.ServerResponse, ctx: ServerContext) {
+  const whopConfig = ctx.config?.marketplaces?.whop;
+  if (!whopConfig?.apiKey) { json(res, { products: [], error: "Whop not configured" }); return; }
+  try {
+    const resp = await fetch(`https://api.whop.com/api/v1/products?company_id=${whopConfig.companyId ?? ""}`, {
+      headers: { Authorization: `Bearer ${whopConfig.apiKey}` },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!resp.ok) { json(res, { products: [], error: `API ${resp.status}` }); return; }
+    const data = await resp.json() as { data: Array<{ id: string; title: string; description?: string; visibility: string; created_at: string }> };
+    json(res, { products: data.data ?? [] });
+  } catch (err) {
+    json(res, { products: [], error: err instanceof Error ? err.message : "Failed" });
+  }
+}
+
+async function handleWhopOrders(res: http.ServerResponse, ctx: ServerContext) {
+  const whopConfig = ctx.config?.marketplaces?.whop;
+  if (!whopConfig?.apiKey) { json(res, { orders: [], error: "Whop not configured" }); return; }
+  try {
+    const resp = await fetch(`https://api.whop.com/api/v1/memberships?company_id=${whopConfig.companyId ?? ""}&per_page=30`, {
+      headers: { Authorization: `Bearer ${whopConfig.apiKey}` },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!resp.ok) { json(res, { orders: [], error: `API ${resp.status}` }); return; }
+    const data = await resp.json() as {
+      data: Array<{
+        id: string;
+        product: { id: string; title: string };
+        plan?: { id: string; title: string };
+        user?: { id: string; username?: string };
+        status: string;
+        created_at: string;
+        metadata?: Record<string, string>;
+      }>;
+    };
+    json(res, { orders: data.data ?? [] });
+  } catch (err) {
+    json(res, { orders: [], error: err instanceof Error ? err.message : "Failed" });
+  }
+}
+
+async function handleWhopRevenue(res: http.ServerResponse, ctx: ServerContext) {
+  const whopConfig = ctx.config?.marketplaces?.whop;
+  if (!whopConfig?.apiKey) { json(res, { payments: [], total: 0, error: "Whop not configured" }); return; }
+  try {
+    const resp = await fetch(`https://api.whop.com/api/v1/payments?company_id=${whopConfig.companyId ?? ""}&per_page=50`, {
+      headers: { Authorization: `Bearer ${whopConfig.apiKey}` },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!resp.ok) { json(res, { payments: [], total: 0, error: `API ${resp.status}` }); return; }
+    const data = await resp.json() as {
+      data: Array<{
+        id: string;
+        amount: number;
+        currency: string;
+        status: string;
+        created_at: string;
+      }>;
+    };
+    const payments = data.data ?? [];
+    const completed = payments.filter((p) => p.status === "succeeded" || p.status === "paid");
+    const total = completed.reduce((sum, p) => sum + p.amount / 100, 0);
+    json(res, { payments, total, count: completed.length });
+  } catch (err) {
+    json(res, { payments: [], total: 0, error: err instanceof Error ? err.message : "Failed" });
   }
 }
 

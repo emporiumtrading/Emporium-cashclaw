@@ -171,6 +171,24 @@ export interface LLMTestResult {
   response: string;
 }
 
+export interface WhopProduct {
+  id: string;
+  title: string;
+  description?: string;
+  visibility: string;
+  created_at: string;
+}
+
+export interface WhopOrder {
+  id: string;
+  product: { id: string; title: string };
+  plan?: { id: string; title: string };
+  user?: { id: string; username?: string };
+  status: string;
+  created_at: string;
+  metadata?: Record<string, string>;
+}
+
 export interface FreelancerBid {
   id: number;
   projectId: number;
@@ -221,6 +239,11 @@ export const api = {
   login: (password: string) => post<{ ok: boolean }>("/api/auth/login", { password }),
   logout: () => post<{ ok: boolean }>("/api/auth/logout"),
   setupAuth: (password: string) => post<{ ok: boolean }>("/api/auth/setup", { password }),
+
+  // Whop
+  getWhopProducts: () => get<{ products: WhopProduct[]; error?: string }>("/api/whop/products"),
+  getWhopOrders: () => get<{ orders: WhopOrder[]; error?: string }>("/api/whop/orders"),
+  getWhopRevenue: () => get<{ payments: unknown[]; total: number; count: number; error?: string }>("/api/whop/revenue"),
 
   // Bids
   getFreelancerBids: () => get<{ bids: FreelancerBid[]; error?: string }>("/api/bids/freelancer"),
