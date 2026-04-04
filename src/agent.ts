@@ -259,6 +259,9 @@ function handleApi(
         freelancer: ctx.config.marketplaces.freelancer
           ? { ...ctx.config.marketplaces.freelancer, accessToken: ctx.config.marketplaces.freelancer.accessToken ? "***" : "" }
           : undefined,
+        whop: ctx.config.marketplaces.whop
+          ? { ...ctx.config.marketplaces.whop, apiKey: ctx.config.marketplaces.whop.apiKey ? "***" : "" }
+          : undefined,
       } : undefined;
       json(res, {
         ...ctx.config,
@@ -683,6 +686,9 @@ async function handleConfigUpdate(
       }
       if (incoming.freelancer) {
         if (incoming.freelancer.accessToken === "***") incoming.freelancer.accessToken = existing.freelancer?.accessToken ?? "";
+      }
+      if (incoming.whop) {
+        if (incoming.whop.apiKey === "***") incoming.whop.apiKey = existing.whop?.apiKey ?? "";
       }
       ctx.config.marketplaces = { ...existing, ...updates.marketplaces };
     }

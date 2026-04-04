@@ -318,12 +318,48 @@ export function getClawGigConfig(): McpServerConfig {
   };
 }
 
+// --- Whop MCP (SSE transport) — product discovery & market research ---
+
+export function getWhopMcpConfig(): McpServerConfig {
+  return {
+    name: "Whop Marketplace",
+    // Whop uses SSE transport at https://mcp.whop.com/sse
+    // For stdio, we use npx to run a bridge or the SDK directly
+    command: "npx",
+    args: ["-y", "mcp-remote", "https://mcp.whop.com/sse"],
+    searchTool: "search_products",
+    searchArgs: {
+      query: "AI automation code development",
+      limit: 10,
+    },
+    normalise(result: unknown): MarketplaceTask[] {
+      if (!result || typeof result !== "object") return [];
+      const items = Array.isArray(result) ? result : (result as Record<string, unknown>).products as unknown[] ?? [];
+      return items.slice(0, 5).map((item: unknown) => {
+        const p = item as Record<string, unknown>;
+        return {
+          id: String(p.id ?? Math.random().toString(36).slice(2)),
+          marketplace: "whop-mcp" as "near",
+          globalId: `whop-mcp:${p.id ?? ""}`,
+          client: String(p.seller ?? p.company ?? ""),
+          description: `Whop product insight: ${p.title ?? ""}\n\n${p.description ?? ""}`.trim(),
+          status: "requested" as const,
+          budget: p.price ? `$${p.price}` : undefined,
+          budgetUsd: p.price ? parseFloat(String(p.price)) : undefined,
+          category: p.category ? String(p.category) : undefined,
+        };
+      });
+    },
+  };
+}
+
 /** All available MCP server configs */
 export const MCP_SERVERS = {
   "mcp-jobs": getMcpJobsConfig,
   "foundrole": getFoundroleJobsConfig,
   "jobspy": getJobSpyConfig,
   "clawgig": getClawGigConfig,
+  "whop": getWhopMcpConfig,
   "upwork": getUpworkMcpConfig,
   "himalayas": getHimalayasMcpConfig,
 } as const;

@@ -91,6 +91,7 @@ export interface MarketplacesData {
   fetchai?: { apiKey: string; agentAddress?: string };
   autonolas?: { privateKey?: string; mechAddress?: string; rpcUrl?: string };
   freelancer?: { accessToken: string; userId?: string; maxBidUsd?: number };
+  whop?: { apiKey: string; companyId?: string };
 }
 
 export interface ConfigData {
@@ -121,6 +122,7 @@ export interface ConfigData {
     enableFoundrole?: boolean;
     enableJobSpy?: boolean;
     enableClawGig?: boolean;
+    enableWhop?: boolean;
   };
 }
 

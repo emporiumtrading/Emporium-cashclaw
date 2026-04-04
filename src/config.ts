@@ -52,6 +52,10 @@ export interface MarketplacesConfig {
     searchKeywords?: string[];
     maxBidUsd?: number;
   };
+  whop?: {
+    apiKey: string;
+    companyId?: string;
+  };
 }
 
 export interface MelistaConfig {

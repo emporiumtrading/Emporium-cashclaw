@@ -38,6 +38,9 @@ interface FormState {
   mcpFoundrole: boolean;
   mcpJobSpy: boolean;
   mcpClawGig: boolean;
+  mcpWhop: boolean;
+  whopApiKey: string;
+  whopCompanyId: string;
   revenueTarget: number;
   revenueStretch: number;
   operatingCost: number;
@@ -80,6 +83,9 @@ function configToForm(c: ConfigData): FormState {
     mcpFoundrole: (c.mcp as Record<string, unknown> | undefined)?.enableFoundrole as boolean ?? false,
     mcpJobSpy: (c.mcp as Record<string, unknown> | undefined)?.enableJobSpy as boolean ?? false,
     mcpClawGig: (c.mcp as Record<string, unknown> | undefined)?.enableClawGig as boolean ?? false,
+    mcpWhop: (c.mcp as Record<string, unknown> | undefined)?.enableWhop as boolean ?? false,
+    whopApiKey: c.marketplaces?.whop?.apiKey ?? "",
+    whopCompanyId: c.marketplaces?.whop?.companyId ?? "",
     revenueTarget: c.revenueGoals?.monthlyTargetUsd ?? 10000,
     revenueStretch: c.revenueGoals?.monthlyStretchUsd ?? 20000,
     operatingCost: c.revenueGoals?.monthlyOperatingCostUsd ?? 350,
@@ -180,6 +186,9 @@ export function Settings() {
           freelancer: (form.flAccessToken && form.flAccessToken !== "")
             ? { accessToken: form.flAccessToken, userId: form.flUserId || undefined, maxBidUsd: form.flMaxBid }
             : undefined,
+          whop: (form.whopApiKey && form.whopApiKey !== "")
+            ? { apiKey: form.whopApiKey, companyId: form.whopCompanyId || undefined }
+            : undefined,
         },
         e2bApiKey: form.e2bApiKey === "***" ? undefined : (form.e2bApiKey || undefined),
         mcp: (form.mcpUpworkToken || form.mcpHimalayas || form.mcpMcpJobs || form.mcpFoundrole || form.mcpJobSpy || form.mcpClawGig) ? {
@@ -189,6 +198,7 @@ export function Settings() {
           enableFoundrole: form.mcpFoundrole,
           enableJobSpy: form.mcpJobSpy,
           enableClawGig: form.mcpClawGig,
+          enableWhop: form.mcpWhop,
         } : undefined,
       });
       setMessage("SAVED");
@@ -441,6 +451,7 @@ export function Settings() {
                 <Toggle label="JobSpy" description="Indeed, LinkedIn, Glassdoor, ZipRecruiter, Google" checked={form.mcpJobSpy} onChange={(v) => update("mcpJobSpy", v)} />
                 <Toggle label="Foundrole" description="Multi-platform job search proxy" checked={form.mcpFoundrole} onChange={(v) => update("mcpFoundrole", v)} />
                 <Toggle label="ClawGig" description="AI agent freelance marketplace — pays USDC" checked={form.mcpClawGig} onChange={(v) => update("mcpClawGig", v)} />
+                <Toggle label="Whop Discovery" description="Whop marketplace product research via MCP" checked={form.mcpWhop} onChange={(v) => update("mcpWhop", v)} />
                 <Toggle label="Himalayas Remote Jobs" description="Remote jobs from 1000+ companies" checked={form.mcpHimalayas} onChange={(v) => update("mcpHimalayas", v)} />
                 <Field label="Upwork OAuth Token" hint="optional — for Upwork job discovery via MCP">
                   <div className="relative">
@@ -602,6 +613,23 @@ export function Settings() {
                 </span>
               )}
             </div>
+          </div>
+        {/* Whop */}
+          <div className="space-y-3 p-4 rounded-lg bg-zinc-900/50 border border-zinc-800/50 mt-5">
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`w-2 h-2 rounded-full ${form.whopApiKey && form.whopApiKey !== "" && form.whopApiKey !== "***" ? "bg-emerald-400" : form.whopApiKey === "***" ? "bg-emerald-400" : "bg-zinc-700"}`} />
+              <span className="text-[12px] font-bold text-zinc-300 uppercase tracking-wider">Whop (Passive Income)</span>
+            </div>
+            <Field label="Company API Key" hint="from whop.com dashboard">
+              <div className="relative">
+                <input type="password" value={form.whopApiKey === "***" ? "" : form.whopApiKey} onChange={(e) => update("whopApiKey", e.target.value || "***")} placeholder={form.whopApiKey === "***" ? "Key saved" : "Enter Whop API key"} className={inputClass} />
+                {form.whopApiKey === "***" && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-emerald-500 uppercase tracking-wider">Saved</span>}
+              </div>
+            </Field>
+            <Field label="Company ID" hint="optional">
+              <input type="text" value={form.whopCompanyId} onChange={(e) => update("whopCompanyId", e.target.value)} placeholder="biz_..." className={inputClass} />
+            </Field>
+            <p className="text-[10px] text-zinc-600 mt-1">Sell AI services as products. Melista monitors orders and auto-delivers work.</p>
           </div>
         <p className="text-[10px] text-zinc-700 mt-3">
           SingularityNET integration coming soon (requires gRPC daemon).
