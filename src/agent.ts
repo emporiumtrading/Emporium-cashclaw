@@ -14,6 +14,8 @@ import {
 import { createLLMProvider } from "./llm/index.js";
 import { createHeartbeat, type Heartbeat } from "./heartbeat.js";
 import { readTodayLog, getRecentActivity } from "./memory/log.js";
+import { getToolDefinitions, executeTool } from "./tools/registry.js";
+import type { ToolUseBlock, ToolResultBlock } from "./llm/types.js";
 import { getFeedbackStats, loadFeedback } from "./memory/feedback.js";
 import { loadKnowledge, getRelevantKnowledge, deleteKnowledge } from "./memory/knowledge.js";
 import { loadChat, appendChat, clearChat } from "./memory/chat.js";
@@ -859,8 +861,8 @@ async function handleChat(
       ? `\nYour personality: tone=${ctx.config.personality.tone}, style=${ctx.config.personality.responseStyle}.${ctx.config.personality.customInstructions ? ` Custom instructions: ${ctx.config.personality.customInstructions}` : ""}`
       : "";
 
-    const systemPrompt = `You are Melista (agent "${ctx.config.agentId}"), an autonomous work agent on the moltlaunch marketplace.
-Your specialties: ${specialties}. These are your ONLY areas of expertise — always reference these specific skills, never claim to be "general-purpose".
+    const systemPrompt = `You are Melista (agent "${ctx.config.agentId}"), a self-evolving autonomous work agent operating across multiple marketplaces.
+Your specialties: ${specialties}.
 
 ## Self-awareness
 - Status: ${isRunning ? "RUNNING" : "STOPPED"}
@@ -868,28 +870,74 @@ Your specialties: ${specialties}. These are your ONLY areas of expertise — alw
 - Study sessions completed: ${studySessions}
 - Knowledge entries: ${allKnowledge.length}
 - Tasks completed: ${stats.totalTasks}, avg score: ${stats.avgScore}/5
-- Tools: quote, decline, submit work, message clients, browse bounties, check wallet, read feedback${personalitySection}
+- Active marketplaces: Moltlaunch, Freelancer.com, NEAR AI Market, Fetch.ai, Whop
+- MCP servers: MCP Jobs, JobSpy, Foundrole, ClawGig, Remotion, Himalayas
+- Revenue goal: $${ctx.config.revenueGoals?.monthlyTargetUsd?.toLocaleString() ?? "10,000"}/month${personalitySection}
 
-You're chatting with your operator. Be helpful, concise, and direct. Discuss performance, knowledge, tasks, and capabilities. Keep responses grounded in your actual data.${knowledgeSection}`;
+## Your tools (USE THEM when the operator asks)
+You have FULL access to all tools. When your operator asks you to create products, search skills, check revenue, or perform any action — USE THE APPROPRIATE TOOL. Do not say you can't. Available tools include:
+- whop_create_product, whop_list_products, whop_check_revenue — Whop product management
+- search_skills, list_available_skills — Find and discover MCP capabilities
+- execute_code, sandbox_write_file — E2B code execution sandbox
+- quote_task, submit_work, send_message — Marketplace actions
+- list_bounties, claim_bounty — Bounty hunting
+- check_wallet_balance, read_feedback_history, memory_search — Self-awareness
+
+You're chatting with your operator. Be helpful, concise, and take ACTION when asked. Use tools to accomplish tasks — don't just describe what you would do.${knowledgeSection}`;
+
+    // Get all available tools
+    const tools = getToolDefinitions(ctx.config);
+    const toolCtx = { config: ctx.config, taskId: "chat" };
 
     // Build conversation from history (last 20 messages for context)
     const history = loadChat().slice(-20);
-    const messages = [
-      { role: "system" as const, content: systemPrompt },
+    const messages: import("./llm/types.js").LLMMessage[] = [
+      { role: "system", content: systemPrompt },
       ...history.map((m) => ({
         role: m.role as "user" | "assistant",
         content: m.content,
       })),
     ];
 
-    const response = await llm.chat(messages);
-    const text = response.content
-      .filter((b): b is { type: "text"; text: string } => b.type === "text")
-      .map((b) => b.text)
-      .join("");
+    // Multi-turn tool execution loop (up to 5 turns)
+    const MAX_CHAT_TURNS = 5;
+    let finalText = "";
 
-    appendChat({ role: "assistant", content: text, timestamp: Date.now() });
-    json(res, { reply: text });
+    for (let turn = 0; turn < MAX_CHAT_TURNS; turn++) {
+      const response = await llm.chat(messages, tools);
+
+      // Collect text
+      const textBlocks = response.content
+        .filter((b): b is { type: "text"; text: string } => b.type === "text")
+        .map((b) => b.text);
+      finalText = textBlocks.join("");
+
+      // If no tool calls, we're done
+      if (response.stopReason !== "tool_use") break;
+
+      // Process tool calls
+      messages.push({ role: "assistant", content: response.content });
+
+      const toolUseBlocks = response.content.filter(
+        (b): b is ToolUseBlock => b.type === "tool_use",
+      );
+
+      const toolResults: ToolResultBlock[] = [];
+      for (const block of toolUseBlocks) {
+        const result = await executeTool(block.name, block.input, toolCtx);
+        toolResults.push({
+          type: "tool_result",
+          tool_use_id: block.id,
+          content: result.data,
+          is_error: !result.success,
+        });
+      }
+
+      messages.push({ role: "user", content: toolResults });
+    }
+
+    appendChat({ role: "assistant", content: finalText, timestamp: Date.now() });
+    json(res, { reply: finalText });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     json(res, { error: msg }, 500);
