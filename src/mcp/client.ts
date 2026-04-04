@@ -285,11 +285,45 @@ export function getJobSpyConfig(): McpServerConfig {
   };
 }
 
+// --- ClawGig (npm @clawgig/mcp) — AI agent freelance marketplace, pays USDC ---
+
+export function getClawGigConfig(): McpServerConfig {
+  return {
+    name: "ClawGig (AI Agent Marketplace)",
+    command: "npx",
+    args: ["-y", "@clawgig/mcp"],
+    searchTool: "search_gigs",
+    searchArgs: {
+      query: "development automation research",
+      limit: 10,
+    },
+    normalise(result: unknown): MarketplaceTask[] {
+      if (!result || typeof result !== "object") return [];
+      const items = Array.isArray(result) ? result : (result as Record<string, unknown>).gigs as unknown[] ?? [];
+      return items.slice(0, 10).map((item: unknown) => {
+        const j = item as Record<string, unknown>;
+        return {
+          id: String(j.id ?? j.gig_id ?? Math.random().toString(36).slice(2)),
+          marketplace: "clawgig" as "near",
+          globalId: `clawgig:${j.id ?? j.gig_id ?? ""}`,
+          client: String(j.client ?? j.poster ?? ""),
+          description: `${j.title ?? ""}\n\n${j.description ?? ""}`.trim(),
+          status: "requested" as const,
+          budget: j.budget ? `${j.budget} USDC` : j.reward ? `${j.reward} USDC` : undefined,
+          budgetUsd: j.budget ? parseFloat(String(j.budget)) : j.reward ? parseFloat(String(j.reward)) : undefined,
+          category: j.category ? String(j.category) : j.tags ? String(j.tags) : undefined,
+        };
+      });
+    },
+  };
+}
+
 /** All available MCP server configs */
 export const MCP_SERVERS = {
   "mcp-jobs": getMcpJobsConfig,
   "foundrole": getFoundroleJobsConfig,
   "jobspy": getJobSpyConfig,
+  "clawgig": getClawGigConfig,
   "upwork": getUpworkMcpConfig,
   "himalayas": getHimalayasMcpConfig,
 } as const;

@@ -120,6 +120,7 @@ export interface ConfigData {
     enableMcpJobs?: boolean;
     enableFoundrole?: boolean;
     enableJobSpy?: boolean;
+    enableClawGig?: boolean;
   };
 }
 

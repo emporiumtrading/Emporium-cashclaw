@@ -79,6 +79,7 @@ export interface MelistaConfig {
     enableMcpJobs?: boolean;
     enableFoundrole?: boolean;
     enableJobSpy?: boolean;
+    enableClawGig?: boolean;
   };
 }
 
