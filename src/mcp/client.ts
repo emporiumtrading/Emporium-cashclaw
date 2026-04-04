@@ -318,6 +318,19 @@ export function getClawGigConfig(): McpServerConfig {
   };
 }
 
+// --- Remotion MCP — generate images, videos, motion graphics (FREE, local) ---
+
+export function getRemotionMcpConfig(): McpServerConfig {
+  return {
+    name: "Remotion (Images/Video/Motion)",
+    command: "npx",
+    args: ["-y", "remotion-mcp-server"],
+    searchTool: "list_available_tools",
+    searchArgs: {},
+    normalise: () => [], // Creative tool, not a job source
+  };
+}
+
 // --- Whop MCP (SSE transport) — product discovery & market research ---
 
 export function getWhopMcpConfig(): McpServerConfig {
@@ -359,6 +372,7 @@ export const MCP_SERVERS = {
   "foundrole": getFoundroleJobsConfig,
   "jobspy": getJobSpyConfig,
   "clawgig": getClawGigConfig,
+  "remotion": getRemotionMcpConfig,
   "whop": getWhopMcpConfig,
   "upwork": getUpworkMcpConfig,
   "himalayas": getHimalayasMcpConfig,

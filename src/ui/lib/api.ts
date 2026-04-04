@@ -122,6 +122,7 @@ export interface ConfigData {
     enableFoundrole?: boolean;
     enableJobSpy?: boolean;
     enableClawGig?: boolean;
+    enableRemotion?: boolean;
     enableWhop?: boolean;
   };
 }

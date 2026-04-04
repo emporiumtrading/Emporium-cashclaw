@@ -84,6 +84,7 @@ export interface MelistaConfig {
     enableFoundrole?: boolean;
     enableJobSpy?: boolean;
     enableClawGig?: boolean;
+    enableRemotion?: boolean;
   };
 }
 

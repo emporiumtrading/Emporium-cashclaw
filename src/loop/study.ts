@@ -167,12 +167,26 @@ You sell AI-powered digital products on Whop (whop.com). Your goal is to identif
 4. What products can you auto-deliver instantly (no custom work needed)?
 5. What's the fastest path to $333/day from passive product sales alone?
 
+### Presentation is EVERYTHING:
+- Every product MUST have a stunning cover image (use Remotion MCP or E2B sandbox to generate)
+- Write copy that SELLS — not just describes. Use power words, urgency, and clear value props
+- Professional formatting with bullet points, emojis, and social proof
+- Think like a top Whop seller — look at what's making money and make it better
+
 ### Output:
-List 3-5 specific products with titles, descriptions, and prices that you should create on Whop. Focus on products that:
+List 3-5 specific products with titles, descriptions, and prices that you should create on Whop. For each product include:
+1. Compelling title (use power words)
+2. Sales-focused description (benefits > features)
+3. Price point with justification
+4. What the cover image should look like
+5. How Melista auto-delivers this product
+
+Focus on products that:
 - Solve a real, urgent problem
 - Can be delivered automatically
 - Have high perceived value relative to price
 - Are trending in 2026
+- Look STUNNING in the marketplace
 
 Produce a concise insight with SPECIFIC product ideas ready to list.`;
   }

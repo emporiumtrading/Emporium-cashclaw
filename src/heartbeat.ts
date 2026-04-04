@@ -553,6 +553,9 @@ export function createHeartbeat(
     if ((config.mcp as Record<string, unknown>).enableClawGig) {
       mcpEnabledServers.push({ id: "clawgig", configFn: MCP_SERVERS["clawgig"] });
     }
+    if ((config.mcp as Record<string, unknown>).enableRemotion) {
+      mcpEnabledServers.push({ id: "remotion", configFn: MCP_SERVERS["remotion"] });
+    }
     if ((config.mcp as Record<string, unknown>).enableWhop) {
       mcpEnabledServers.push({ id: "whop", configFn: MCP_SERVERS["whop"] });
     }

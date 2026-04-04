@@ -52,6 +52,9 @@ export const SKILL_REGISTRY: McpSkill[] = [
   { id: "eslint", name: "ESLint Code Linter", description: "Lint JavaScript/TypeScript code", npmPackage: "@eslint/mcp", command: "npx", args: ["-y", "@eslint/mcp"], tools: ["lint_code"], category: "qa", authRequired: false },
   { id: "playwright", name: "Playwright Testing", description: "Automated browser testing", npmPackage: "@playwright/mcp", command: "npx", args: ["-y", "@playwright/mcp"], tools: ["run_test"], category: "qa", authRequired: false },
 
+  // --- Remotion (Images + Video + Motion Graphics) ---
+  { id: "remotion", name: "Remotion (Images/Video/Motion)", description: "Generate stunning images, videos, and motion graphics programmatically. Create product covers, thumbnails, social media graphics, animations. FREE, runs locally.", npmPackage: "remotion-mcp-server", command: "npx", args: ["-y", "remotion-mcp-server"], tools: ["create_still", "create_video", "render_composition"], category: "image", authRequired: false },
+
   // --- Music/Audio ---
   { id: "music-studio", name: "Music Studio", description: "Compose music from ABC notation", npmPackage: "mcp-music-studio", command: "npx", args: ["-y", "mcp-music-studio"], tools: ["compose_music"], category: "music", authRequired: false },
 
