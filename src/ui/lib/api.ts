@@ -117,6 +117,9 @@ export interface ConfigData {
   mcp?: {
     upworkToken?: string;
     enableHimalayas?: boolean;
+    enableMcpJobs?: boolean;
+    enableFoundrole?: boolean;
+    enableJobSpy?: boolean;
   };
 }
 

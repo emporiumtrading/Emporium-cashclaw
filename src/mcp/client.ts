@@ -186,23 +186,112 @@ export function getHimalayasMcpConfig(): McpServerConfig {
   };
 }
 
-/** Create and connect configured MCP clients */
-export async function createMcpClients(config: {
-  upworkToken?: string;
-  enableHimalayas?: boolean;
-}): Promise<McpJobClient> {
-  const client = new McpJobClient();
+// --- mcp-jobs (npm) — zero-config multi-platform job aggregation ---
 
-  // Only connect if tokens are available
-  if (config.upworkToken) {
-    const upworkConfig = getUpworkMcpConfig(config.upworkToken);
-    await client.connect("upwork", upworkConfig);
-  }
-
-  if (config.enableHimalayas) {
-    const himalayasConfig = getHimalayasMcpConfig();
-    await client.connect("himalayas", himalayasConfig);
-  }
-
-  return client;
+export function getMcpJobsConfig(): McpServerConfig {
+  return {
+    name: "MCP Jobs",
+    command: "npx",
+    args: ["-y", "mcp-jobs"],
+    searchTool: "search_jobs",
+    searchArgs: {
+      query: "developer python javascript react",
+      limit: 10,
+    },
+    normalise(result: unknown): MarketplaceTask[] {
+      if (!result || typeof result !== "object") return [];
+      const items = Array.isArray(result) ? result : (result as Record<string, unknown>).jobs as unknown[] ?? [];
+      return items.slice(0, 10).map((item: unknown) => {
+        const j = item as Record<string, unknown>;
+        return {
+          id: String(j.id ?? j.url ?? Math.random().toString(36).slice(2)),
+          marketplace: "mcp-jobs" as "near",
+          globalId: `mcp-jobs:${j.id ?? j.url ?? ""}`,
+          client: String(j.company ?? j.company_name ?? ""),
+          description: `${j.title ?? ""}\n\n${j.description ?? j.snippet ?? ""}`.trim(),
+          status: "requested" as const,
+          budget: j.salary ? String(j.salary) : undefined,
+          category: j.category ? String(j.category) : j.tags ? String(j.tags) : undefined,
+        };
+      });
+    },
+  };
 }
+
+// --- @foundrole/ai-job-search-mcp (npm) — multi-platform job search proxy ---
+
+export function getFoundroleJobsConfig(): McpServerConfig {
+  return {
+    name: "Foundrole Job Search",
+    command: "npx",
+    args: ["-y", "@foundrole/ai-job-search-mcp"],
+    searchTool: "search_jobs",
+    searchArgs: {
+      query: "software developer freelance remote",
+      limit: 10,
+    },
+    normalise(result: unknown): MarketplaceTask[] {
+      if (!result || typeof result !== "object") return [];
+      const items = Array.isArray(result) ? result : (result as Record<string, unknown>).jobs as unknown[] ?? [];
+      return items.slice(0, 10).map((item: unknown) => {
+        const j = item as Record<string, unknown>;
+        return {
+          id: String(j.id ?? j.url ?? Math.random().toString(36).slice(2)),
+          marketplace: "foundrole" as "near",
+          globalId: `foundrole:${j.id ?? j.url ?? ""}`,
+          client: String(j.company ?? ""),
+          description: `${j.title ?? ""}\n\n${j.description ?? ""}`.trim(),
+          status: "requested" as const,
+          budget: j.salary ? String(j.salary) : undefined,
+          category: j.location ? String(j.location) : undefined,
+        };
+      });
+    },
+  };
+}
+
+// --- jobspy-mcp-server (GitHub) — Indeed, LinkedIn, Glassdoor, ZipRecruiter, Google ---
+
+export function getJobSpyConfig(): McpServerConfig {
+  return {
+    name: "JobSpy (Indeed/LinkedIn/Glassdoor)",
+    command: "npx",
+    args: ["-y", "github:borgius/jobspy-mcp-server"],
+    searchTool: "search_jobs",
+    searchArgs: {
+      search_term: "software developer",
+      location: "Remote",
+      results_wanted: 10,
+      site_name: "indeed,linkedin,glassdoor",
+    },
+    normalise(result: unknown): MarketplaceTask[] {
+      if (!result || typeof result !== "object") return [];
+      const items = Array.isArray(result) ? result : (result as Record<string, unknown>).jobs as unknown[] ?? [];
+      return items.slice(0, 10).map((item: unknown) => {
+        const j = item as Record<string, unknown>;
+        return {
+          id: String(j.id ?? j.job_url ?? Math.random().toString(36).slice(2)),
+          marketplace: "jobspy" as "near",
+          globalId: `jobspy:${j.id ?? ""}`,
+          client: String(j.company_name ?? j.company ?? ""),
+          description: `${j.title ?? ""}\n\n${j.description ?? ""}`.trim(),
+          status: "requested" as const,
+          budget: j.min_amount ? `$${j.min_amount}-${j.max_amount}` : undefined,
+          budgetUsd: j.min_amount ? parseFloat(String(j.min_amount)) : undefined,
+          category: j.site ? String(j.site) : undefined,
+        };
+      });
+    },
+  };
+}
+
+/** All available MCP server configs */
+export const MCP_SERVERS = {
+  "mcp-jobs": getMcpJobsConfig,
+  "foundrole": getFoundroleJobsConfig,
+  "jobspy": getJobSpyConfig,
+  "upwork": getUpworkMcpConfig,
+  "himalayas": getHimalayasMcpConfig,
+} as const;
+
+export type McpServerId = keyof typeof MCP_SERVERS;

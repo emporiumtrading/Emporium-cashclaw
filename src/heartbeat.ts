@@ -15,7 +15,7 @@ import {
 import * as dbTasks from "./db/tasks.js";
 import * as dbRevenue from "./db/revenue.js";
 import * as dbClients from "./db/clients.js";
-import { McpJobClient, getUpworkMcpConfig, getHimalayasMcpConfig } from "./mcp/client.js";
+import { McpJobClient, MCP_SERVERS } from "./mcp/client.js";
 
 export interface HeartbeatState {
   running: boolean;
@@ -531,47 +531,70 @@ export function createHeartbeat(
   let mcpTimer: ReturnType<typeof setTimeout> | null = null;
   const MCP_POLL_INTERVAL_MS = 600_000; // Poll MCP servers every 10 min (heavier weight)
 
+  const mcpEnabledServers: Array<{ id: string; configFn: () => ReturnType<typeof MCP_SERVERS[keyof typeof MCP_SERVERS]> }> = [];
+
   async function initMcpClients() {
     if (!config.mcp) return;
     mcpClient = new McpJobClient();
 
-    if (config.mcp.upworkToken) {
-      const upworkConfig = getUpworkMcpConfig(config.mcp.upworkToken);
-      await mcpClient.connect("upwork", upworkConfig);
+    // Build list of enabled servers
+    if (config.mcp.enableMcpJobs) {
+      mcpEnabledServers.push({ id: "mcp-jobs", configFn: MCP_SERVERS["mcp-jobs"] });
     }
-
+    if (config.mcp.enableFoundrole) {
+      mcpEnabledServers.push({ id: "foundrole", configFn: MCP_SERVERS["foundrole"] });
+    }
+    if (config.mcp.enableJobSpy) {
+      mcpEnabledServers.push({ id: "jobspy", configFn: MCP_SERVERS["jobspy"] });
+    }
     if (config.mcp.enableHimalayas) {
-      const himalayasConfig = getHimalayasMcpConfig();
-      await mcpClient.connect("himalayas", himalayasConfig);
+      mcpEnabledServers.push({ id: "himalayas", configFn: MCP_SERVERS["himalayas"] });
+    }
+    if (config.mcp.upworkToken) {
+      mcpEnabledServers.push({ id: "upwork", configFn: () => MCP_SERVERS["upwork"](config.mcp!.upworkToken) });
     }
 
-    if (mcpClient) {
-      emit({ type: "poll", message: `MCP clients initialized` });
+    // Connect to each server sequentially (spawns child processes)
+    for (const server of mcpEnabledServers) {
+      try {
+        const serverConfig = server.configFn();
+        await mcpClient.connect(server.id, serverConfig);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        emit({ type: "error", message: `[MCP] Failed to connect ${server.id}: ${msg}` });
+      }
+    }
+
+    if (mcpEnabledServers.length > 0) {
+      const connected = mcpEnabledServers.filter((s) => mcpClient!.isConnected(s.id)).map((s) => s.id);
+      emit({ type: "poll", message: `MCP clients: ${connected.join(", ")} (${connected.length}/${mcpEnabledServers.length})` });
     }
   }
 
   async function tickMcp() {
-    if (!mcpClient || !config.mcp) return;
+    if (!mcpClient || mcpEnabledServers.length === 0) return;
 
     try {
       const allTasks: MarketplaceTask[] = [];
 
-      if (config.mcp.upworkToken && mcpClient.isConnected("upwork")) {
-        const upworkConfig = getUpworkMcpConfig(config.mcp.upworkToken);
-        const jobs = await mcpClient.searchJobs("upwork", upworkConfig);
-        allTasks.push(...jobs);
-      }
-
-      if (config.mcp.enableHimalayas && mcpClient.isConnected("himalayas")) {
-        const himalayasConfig = getHimalayasMcpConfig();
-        const jobs = await mcpClient.searchJobs("himalayas", himalayasConfig);
-        allTasks.push(...jobs);
+      for (const server of mcpEnabledServers) {
+        if (!mcpClient.isConnected(server.id)) continue;
+        try {
+          const serverConfig = server.configFn();
+          const jobs = await mcpClient.searchJobs(server.id, serverConfig);
+          if (jobs.length > 0) {
+            emit({ type: "poll", message: `[MCP:${server.id}] Found ${jobs.length} job(s)` });
+            allTasks.push(...jobs);
+          }
+        } catch {
+          // Individual server failure — continue with others
+        }
       }
 
       if (allTasks.length > 0) {
         emit({
           type: "poll",
-          message: `MCP poll: ${allTasks.length} job(s) found`,
+          message: `MCP total: ${allTasks.length} job(s) across ${mcpEnabledServers.length} server(s)`,
         });
 
         // Process max 1 MCP task per poll

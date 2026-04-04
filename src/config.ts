@@ -76,13 +76,9 @@ export interface MelistaConfig {
   mcp?: {
     upworkToken?: string;
     enableHimalayas?: boolean;
-    customServers?: Array<{
-      id: string;
-      name: string;
-      command: string;
-      args: string[];
-      searchTool: string;
-    }>;
+    enableMcpJobs?: boolean;
+    enableFoundrole?: boolean;
+    enableJobSpy?: boolean;
   };
 }
 

@@ -34,6 +34,9 @@ interface FormState {
   e2bApiKey: string;
   mcpUpworkToken: string;
   mcpHimalayas: boolean;
+  mcpMcpJobs: boolean;
+  mcpFoundrole: boolean;
+  mcpJobSpy: boolean;
   revenueTarget: number;
   revenueStretch: number;
   operatingCost: number;
@@ -72,6 +75,9 @@ function configToForm(c: ConfigData): FormState {
     e2bApiKey: c.e2bApiKey ?? "",
     mcpUpworkToken: c.mcp?.upworkToken ?? "",
     mcpHimalayas: c.mcp?.enableHimalayas ?? false,
+    mcpMcpJobs: (c.mcp as Record<string, unknown> | undefined)?.enableMcpJobs as boolean ?? false,
+    mcpFoundrole: (c.mcp as Record<string, unknown> | undefined)?.enableFoundrole as boolean ?? false,
+    mcpJobSpy: (c.mcp as Record<string, unknown> | undefined)?.enableJobSpy as boolean ?? false,
     revenueTarget: c.revenueGoals?.monthlyTargetUsd ?? 10000,
     revenueStretch: c.revenueGoals?.monthlyStretchUsd ?? 20000,
     operatingCost: c.revenueGoals?.monthlyOperatingCostUsd ?? 350,
@@ -174,9 +180,12 @@ export function Settings() {
             : undefined,
         },
         e2bApiKey: form.e2bApiKey === "***" ? undefined : (form.e2bApiKey || undefined),
-        mcp: (form.mcpUpworkToken || form.mcpHimalayas) ? {
+        mcp: (form.mcpUpworkToken || form.mcpHimalayas || form.mcpMcpJobs || form.mcpFoundrole || form.mcpJobSpy) ? {
           upworkToken: form.mcpUpworkToken === "***" ? undefined : (form.mcpUpworkToken || undefined),
           enableHimalayas: form.mcpHimalayas,
+          enableMcpJobs: form.mcpMcpJobs,
+          enableFoundrole: form.mcpFoundrole,
+          enableJobSpy: form.mcpJobSpy,
         } : undefined,
       });
       setMessage("SAVED");
@@ -425,7 +434,10 @@ export function Settings() {
             <div className="mt-4 pt-3 border-t border-zinc-800/50">
               <p className="text-[11px] text-zinc-400 font-semibold uppercase tracking-wider mb-3">MCP Job Servers</p>
               <div className="space-y-3">
-                <Toggle label="Himalayas Remote Jobs" description="Search remote jobs via MCP" checked={form.mcpHimalayas} onChange={(v) => update("mcpHimalayas", v)} />
+                <Toggle label="MCP Jobs" description="RemoteOK, HN, GitHub, Arbeitnow — zero config" checked={form.mcpMcpJobs} onChange={(v) => update("mcpMcpJobs", v)} />
+                <Toggle label="JobSpy" description="Indeed, LinkedIn, Glassdoor, ZipRecruiter, Google" checked={form.mcpJobSpy} onChange={(v) => update("mcpJobSpy", v)} />
+                <Toggle label="Foundrole" description="Multi-platform job search proxy" checked={form.mcpFoundrole} onChange={(v) => update("mcpFoundrole", v)} />
+                <Toggle label="Himalayas Remote Jobs" description="Remote jobs from 1000+ companies" checked={form.mcpHimalayas} onChange={(v) => update("mcpHimalayas", v)} />
                 <Field label="Upwork OAuth Token" hint="optional — for Upwork job discovery via MCP">
                   <div className="relative">
                     <input type="password" value={form.mcpUpworkToken === "***" ? "" : form.mcpUpworkToken} onChange={(e) => update("mcpUpworkToken", e.target.value || "***")} placeholder={form.mcpUpworkToken === "***" ? "Token saved" : "Enter Upwork OAuth token"} className={inputClass} />
