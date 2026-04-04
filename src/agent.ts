@@ -662,6 +662,12 @@ async function handleConfigUpdate(
     if (updates.e2bApiKey && updates.e2bApiKey !== "***") {
       ctx.config.e2bApiKey = updates.e2bApiKey;
     }
+    if (updates.mcp) {
+      const existing = ctx.config.mcp ?? {};
+      const incoming = updates.mcp as Record<string, unknown>;
+      if (incoming.upworkToken === "***") delete incoming.upworkToken;
+      ctx.config.mcp = { ...existing, ...incoming } as typeof ctx.config.mcp;
+    }
     if (updates.marketplaces !== undefined) {
       const existing = ctx.config.marketplaces ?? {};
       const incoming = updates.marketplaces as Record<string, Record<string, string> | undefined>;

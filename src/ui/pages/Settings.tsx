@@ -32,6 +32,8 @@ interface FormState {
   flUserId: string;
   flMaxBid: number;
   e2bApiKey: string;
+  mcpUpworkToken: string;
+  mcpHimalayas: boolean;
   revenueTarget: number;
   revenueStretch: number;
   operatingCost: number;
@@ -68,6 +70,8 @@ function configToForm(c: ConfigData): FormState {
     flUserId: c.marketplaces?.freelancer?.userId ?? "",
     flMaxBid: c.marketplaces?.freelancer?.maxBidUsd ?? 200,
     e2bApiKey: c.e2bApiKey ?? "",
+    mcpUpworkToken: c.mcp?.upworkToken ?? "",
+    mcpHimalayas: c.mcp?.enableHimalayas ?? false,
     revenueTarget: c.revenueGoals?.monthlyTargetUsd ?? 10000,
     revenueStretch: c.revenueGoals?.monthlyStretchUsd ?? 20000,
     operatingCost: c.revenueGoals?.monthlyOperatingCostUsd ?? 350,
@@ -170,6 +174,10 @@ export function Settings() {
             : undefined,
         },
         e2bApiKey: form.e2bApiKey === "***" ? undefined : (form.e2bApiKey || undefined),
+        mcp: (form.mcpUpworkToken || form.mcpHimalayas) ? {
+          upworkToken: form.mcpUpworkToken === "***" ? undefined : (form.mcpUpworkToken || undefined),
+          enableHimalayas: form.mcpHimalayas,
+        } : undefined,
       });
       setMessage("SAVED");
       setTimeout(() => setMessage(""), 2000);
@@ -413,6 +421,19 @@ export function Settings() {
                 </div>
               </Field>
               <p className="text-[10px] text-zinc-700 mt-1.5">Enables Melista to write, run, test, and fix code before delivering to clients.</p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-zinc-800/50">
+              <p className="text-[11px] text-zinc-400 font-semibold uppercase tracking-wider mb-3">MCP Job Servers</p>
+              <div className="space-y-3">
+                <Toggle label="Himalayas Remote Jobs" description="Search remote jobs via MCP" checked={form.mcpHimalayas} onChange={(v) => update("mcpHimalayas", v)} />
+                <Field label="Upwork OAuth Token" hint="optional — for Upwork job discovery via MCP">
+                  <div className="relative">
+                    <input type="password" value={form.mcpUpworkToken === "***" ? "" : form.mcpUpworkToken} onChange={(e) => update("mcpUpworkToken", e.target.value || "***")} placeholder={form.mcpUpworkToken === "***" ? "Token saved" : "Enter Upwork OAuth token"} className={inputClass} />
+                    {form.mcpUpworkToken === "***" && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-emerald-500 uppercase tracking-wider">Saved</span>}
+                  </div>
+                </Field>
+                <p className="text-[10px] text-zinc-700">MCP servers spawn as child processes and poll for jobs every 10 minutes.</p>
+              </div>
             </div>
           </Section>
 

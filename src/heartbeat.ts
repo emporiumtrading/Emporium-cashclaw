@@ -15,6 +15,7 @@ import {
 import * as dbTasks from "./db/tasks.js";
 import * as dbRevenue from "./db/revenue.js";
 import * as dbClients from "./db/clients.js";
+import { McpJobClient, getUpworkMcpConfig, getHimalayasMcpConfig } from "./mcp/client.js";
 
 export interface HeartbeatState {
   running: boolean;
@@ -524,6 +525,74 @@ export function createHeartbeat(
     marketplaceTimer = setTimeout(() => void tickMarketplaces(), MARKETPLACE_POLL_INTERVAL_MS);
   }
 
+  // --- MCP Server Job Polling ---
+
+  let mcpClient: McpJobClient | null = null;
+  let mcpTimer: ReturnType<typeof setTimeout> | null = null;
+  const MCP_POLL_INTERVAL_MS = 600_000; // Poll MCP servers every 10 min (heavier weight)
+
+  async function initMcpClients() {
+    if (!config.mcp) return;
+    mcpClient = new McpJobClient();
+
+    if (config.mcp.upworkToken) {
+      const upworkConfig = getUpworkMcpConfig(config.mcp.upworkToken);
+      await mcpClient.connect("upwork", upworkConfig);
+    }
+
+    if (config.mcp.enableHimalayas) {
+      const himalayasConfig = getHimalayasMcpConfig();
+      await mcpClient.connect("himalayas", himalayasConfig);
+    }
+
+    if (mcpClient) {
+      emit({ type: "poll", message: `MCP clients initialized` });
+    }
+  }
+
+  async function tickMcp() {
+    if (!mcpClient || !config.mcp) return;
+
+    try {
+      const allTasks: MarketplaceTask[] = [];
+
+      if (config.mcp.upworkToken && mcpClient.isConnected("upwork")) {
+        const upworkConfig = getUpworkMcpConfig(config.mcp.upworkToken);
+        const jobs = await mcpClient.searchJobs("upwork", upworkConfig);
+        allTasks.push(...jobs);
+      }
+
+      if (config.mcp.enableHimalayas && mcpClient.isConnected("himalayas")) {
+        const himalayasConfig = getHimalayasMcpConfig();
+        const jobs = await mcpClient.searchJobs("himalayas", himalayasConfig);
+        allTasks.push(...jobs);
+      }
+
+      if (allTasks.length > 0) {
+        emit({
+          type: "poll",
+          message: `MCP poll: ${allTasks.length} job(s) found`,
+        });
+
+        // Process max 1 MCP task per poll
+        const toProcess = allTasks.slice(0, 1);
+        for (const task of toProcess) {
+          handleMarketplaceTask(task);
+        }
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      emit({ type: "error", message: `MCP poll error: ${msg}` });
+    }
+
+    scheduleMcpPoll();
+  }
+
+  function scheduleMcpPoll() {
+    if (!state.running) return;
+    mcpTimer = setTimeout(() => void tickMcp(), MCP_POLL_INTERVAL_MS);
+  }
+
   function start() {
     if (state.running) return;
     state.running = true;
@@ -539,6 +608,14 @@ export function createHeartbeat(
     setTimeout(() => {
       if (state.running) void tickMarketplaces();
     }, 30_000);
+    // Delay MCP polling by 60s (heavier — spawns child processes)
+    setTimeout(() => {
+      if (state.running && config.mcp) {
+        void initMcpClients().then(() => {
+          if (state.running) void tickMcp();
+        });
+      }
+    }, 60_000);
   }
 
   function stop() {
@@ -551,6 +628,14 @@ export function createHeartbeat(
     if (marketplaceTimer) {
       clearTimeout(marketplaceTimer);
       marketplaceTimer = null;
+    }
+    if (mcpTimer) {
+      clearTimeout(mcpTimer);
+      mcpTimer = null;
+    }
+    if (mcpClient) {
+      void mcpClient.disconnectAll();
+      mcpClient = null;
     }
     emit({ type: "ws", message: "Heartbeat stopped" });
   }

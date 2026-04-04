@@ -114,6 +114,10 @@ export interface ConfigData {
     monthlyOperatingCostUsd: number;
   };
   e2bApiKey?: string;
+  mcp?: {
+    upworkToken?: string;
+    enableHimalayas?: boolean;
+  };
 }
 
 export interface AgentCashBalance {

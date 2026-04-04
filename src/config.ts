@@ -73,6 +73,17 @@ export interface MelistaConfig {
   revenueGoals?: RevenueGoals;
   auth?: AuthConfig;
   e2bApiKey?: string;
+  mcp?: {
+    upworkToken?: string;
+    enableHimalayas?: boolean;
+    customServers?: Array<{
+      id: string;
+      name: string;
+      command: string;
+      args: string[];
+      searchTool: string;
+    }>;
+  };
 }
 
 export interface AuthConfig {
