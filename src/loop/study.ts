@@ -188,6 +188,22 @@ Focus on products that:
 - Are trending in 2026
 - Look STUNNING in the marketplace
 
+### Continuous Improvement Cycle:
+After creating products, ALWAYS review performance:
+1. Which products are getting views but not buying? → Fix the description/price
+2. Which products are selling? → Create variations and upsells
+3. What are customers asking for in other marketplaces? → Create Whop products for those needs
+4. What's trending on Twitter/Reddit/HN right now? → Create products that ride the wave
+5. Are there gaps in the Whop marketplace? → Fill them first
+
+### Create products that COMPOUND:
+- Starter products ($15-25) → get customers in the door
+- Core products ($30-60) → main revenue drivers
+- Premium products ($99-199) → high-value for serious buyers
+- Bundle deals → combine 3+ products at a discount
+
+Never stop iterating. The best sellers constantly refresh their lineup.
+
 Produce a concise insight with SPECIFIC product ideas ready to list.`;
   }
 }
