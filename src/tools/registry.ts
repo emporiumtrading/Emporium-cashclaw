@@ -19,6 +19,7 @@ import {
 import { agentcashFetch, agentcashBalance } from "./agentcash.js";
 import { executeCode, sandboxWriteFile, sandboxReadFile, sandboxListFiles } from "./sandbox.js";
 import { searchSkills, listAllSkills } from "./skills.js";
+import { whopCreateProduct, whopListProducts, whopCheckRevenue } from "./whop.js";
 
 const BASE_TOOLS: Tool[] = [
   readTask,
@@ -52,7 +53,10 @@ let cachedToolMap: Map<string, Tool> | null = null;
 
 function buildToolMap(config: MelistaConfig): Map<string, Tool> {
   if (cachedConfig === config && cachedToolMap) return cachedToolMap;
-  let tools = [...BASE_TOOLS, searchSkills, listAllSkills];
+  const WHOP_TOOLS: Tool[] = config.marketplaces?.whop?.apiKey
+    ? [whopCreateProduct, whopListProducts, whopCheckRevenue]
+    : [];
+  let tools = [...BASE_TOOLS, searchSkills, listAllSkills, ...WHOP_TOOLS];
   if (config.agentCashEnabled) tools.push(...AGENTCASH_TOOLS);
   if (config.e2bApiKey) tools.push(...SANDBOX_TOOLS);
   cachedToolMap = new Map(tools.map((t) => [t.definition.name, t]));

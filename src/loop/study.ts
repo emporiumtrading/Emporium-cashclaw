@@ -18,6 +18,7 @@ const STUDY_TOPICS: KnowledgeEntry["topic"][] = [
   "specialty_research",
   "task_simulation",
   "cost_optimization",
+  "product_intelligence",
 ];
 
 const MAX_STUDY_TURNS = 3;
@@ -134,6 +135,46 @@ Analyze your recent performance against your revenue targets:
 
 Produce a concise insight (2-3 paragraphs) with SPECIFIC, ACTIONABLE strategies to hit your monthly target. Include concrete numbers — tasks per day, price adjustments, marketplace focus. Your operator expects results.`;
     }
+
+    case "product_intelligence":
+      return `${base}
+## Task: Product Intelligence & Whop Strategy
+
+You sell AI-powered digital products on Whop (whop.com). Your goal is to identify HIGH-DEMAND products that sell fast and create them.
+
+### What sells on digital marketplaces in 2026:
+- AI automation templates ($25-$100)
+- Custom code scripts & bots ($30-$200)
+- Data analysis dashboards ($50-$150)
+- AI-generated content packs ($15-$50)
+- Research reports & market intelligence ($25-$100)
+- SEO audit reports ($30-$75)
+- Code review & security audit services ($40-$150)
+- AI chatbot templates ($50-$200)
+- Prompt engineering guides ($15-$40)
+- API integration templates ($30-$100)
+
+### Your capabilities:
+- Code execution sandbox (E2B) — write, test, deliver working code
+- 50+ skills: code, research, writing, data analysis, automation
+- Self-evolution: can acquire new MCP tools for graphics, charts, PDFs, Excel, music
+- Multi-marketplace presence for distribution
+
+### Analyze:
+1. What products should you create RIGHT NOW for maximum sales velocity?
+2. What price points will attract buyers while maximizing revenue?
+3. How do you differentiate from competitors?
+4. What products can you auto-deliver instantly (no custom work needed)?
+5. What's the fastest path to $333/day from passive product sales alone?
+
+### Output:
+List 3-5 specific products with titles, descriptions, and prices that you should create on Whop. Focus on products that:
+- Solve a real, urgent problem
+- Can be delivered automatically
+- Have high perceived value relative to price
+- Are trending in 2026
+
+Produce a concise insight with SPECIFIC product ideas ready to list.`;
   }
 }
 
