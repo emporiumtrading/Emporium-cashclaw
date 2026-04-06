@@ -442,7 +442,7 @@ export function createHeartbeat(
   // --- Autonomous Prediction Research ---
 
   let lastPredictionTime = 0;
-  const PREDICTION_INTERVAL_MS = freeLlm ? 300_000 : 1_800_000; // Every 5 min when FREE, every 30 min when paid
+  const PREDICTION_INTERVAL_MS = freeLlm ? 600_000 : 1_800_000; // Every 10 min when FREE (avoid rate limits), every 30 min when paid
 
   async function maybePredictionResearch() {
     // Predictions run regardless of MCP — uses direct Polymarket API via tools

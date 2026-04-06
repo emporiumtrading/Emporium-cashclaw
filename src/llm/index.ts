@@ -157,11 +157,25 @@ function createOpenAICompatibleProvider(
         body.tools = toOpenAITools(tools);
       }
 
-      const res = await fetch(`${baseUrl}/chat/completions`, {
+      let res = await fetch(`${baseUrl}/chat/completions`, {
         method: "POST",
         headers,
         body: JSON.stringify(body),
       });
+
+      // Retry once on 429 (rate limit) with a delay
+      if (res.status === 429) {
+        await new Promise((r) => setTimeout(r, 5000)); // Wait 5s
+        // Try a different free model as fallback
+        if (config.model === "openrouter/free") {
+          body.model = "google/gemini-2.5-flash-lite:free";
+        }
+        res = await fetch(`${baseUrl}/chat/completions`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(body),
+        });
+      }
 
       if (!res.ok) {
         const err = await res.text();
