@@ -80,6 +80,12 @@ export function getTasksByStatus(status: string, limit = 50): TaskRecord[] {
   return getDb().prepare("SELECT * FROM tasks WHERE status = ? ORDER BY created_at DESC LIMIT ?").all(status, limit) as TaskRecord[];
 }
 
+/** Check if a task was already processed (declined, quoted, submitted) */
+export function wasTaskProcessed(globalId: string): boolean {
+  const row = getDb().prepare("SELECT id FROM tasks WHERE id = ? OR global_id = ?").get(globalId, globalId);
+  return Boolean(row);
+}
+
 export function getTasksByClient(clientAddress: string, limit = 50): TaskRecord[] {
   return getDb().prepare("SELECT * FROM tasks WHERE client_address = ? ORDER BY created_at DESC LIMIT ?").all(clientAddress, limit) as TaskRecord[];
 }

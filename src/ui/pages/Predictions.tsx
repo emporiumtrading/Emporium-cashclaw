@@ -56,6 +56,7 @@ export function Predictions() {
   const [daily, setDaily] = useState<DailyPnl[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"overview" | "positions" | "history">("overview");
+  const [liveEvents, setLiveEvents] = useState<Array<{ type: string; message: string; timestamp: number }>>([]);
 
   useEffect(() => {
     loadData();
@@ -65,14 +66,23 @@ export function Predictions() {
 
   async function loadData() {
     try {
-      const [s, p, d] = await Promise.all([
+      const [s, p, d, events] = await Promise.all([
         fetch("/api/predictions/stats").then((r) => r.json()).catch(() => null),
         fetch("/api/predictions/positions").then((r) => r.json()).catch(() => ({ open: [], history: [] })),
         fetch("/api/predictions/daily").then((r) => r.json()).catch(() => ({ days: [] })),
+        fetch("/api/tasks").then((r) => r.json()).catch(() => ({ events: [] })),
       ]);
       if (s) setStats(s);
       setPositions(p);
       setDaily(d.days ?? []);
+      // Filter prediction-related events
+      const predEvents = (events.events ?? []).filter((e: { message: string }) => {
+        const m = (e.message ?? "").toLowerCase();
+        return m.includes("predict") || m.includes("market") || m.includes("scan") ||
+               m.includes("paper") || m.includes("trade") || m.includes("polymarket") ||
+               m.includes("kalshi") || m.includes("confidence") || m.includes("autonomous");
+      });
+      setLiveEvents(predEvents.slice(0, 30));
     } catch { /* ignore */ }
     setLoading(false);
   }
@@ -133,6 +143,9 @@ export function Predictions() {
         ))}
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      {/* Left: Main content (2 cols) */}
+      <div className="lg:col-span-2">
       {loading ? (
         <div className="text-center py-20">
           <div className="w-5 h-5 border-2 border-zinc-700 border-t-zinc-400 rounded-full animate-spin mx-auto mb-3" />
@@ -194,6 +207,59 @@ export function Predictions() {
           ))}
         </div>
       )}
+      </div>
+
+      {/* Right: Live Activity Feed */}
+      <div className="lg:col-span-1">
+        <div className="card p-4 sticky top-8">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <h3 className="text-sm font-bold text-zinc-200 uppercase tracking-wider">Live Feed</h3>
+          </div>
+
+          {liveEvents.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-[12px] text-zinc-600">Waiting for prediction activity...</p>
+              <p className="text-[10px] text-zinc-700 mt-1">Scans every 30 min</p>
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-[600px] overflow-y-auto">
+              {liveEvents.map((e, i) => {
+                const isResearch = (e.message ?? "").toLowerCase().includes("scan") || (e.message ?? "").toLowerCase().includes("research");
+                const isTrade = (e.message ?? "").toLowerCase().includes("trade") || (e.message ?? "").toLowerCase().includes("paper");
+                const isResult = (e.message ?? "").toLowerCase().includes("complete") || (e.message ?? "").toLowerCase().includes("no trades");
+
+                const dotColor = isTrade ? "bg-violet-400" : isResearch ? "bg-blue-400" : isResult ? "bg-amber-400" : "bg-zinc-600";
+                const textColor = isTrade ? "text-violet-300" : isResearch ? "text-blue-300" : isResult ? "text-amber-300" : "text-zinc-400";
+
+                return (
+                  <div key={i} className="flex gap-2">
+                    <div className={`w-1.5 h-1.5 rounded-full ${dotColor} mt-1.5 shrink-0`} />
+                    <div className="min-w-0">
+                      <p className={`text-[11px] ${textColor} leading-relaxed`}>
+                        {e.message?.slice(0, 150)}
+                      </p>
+                      <p className="text-[9px] text-zinc-700 font-mono">
+                        {new Date(e.timestamp).toLocaleTimeString([], { hour12: false })}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="mt-3 pt-3 border-t border-zinc-800/50">
+            <p className="text-[10px] text-zinc-600">
+              Scanning: sports, crypto, economy, tech, politics, global events
+            </p>
+            <p className="text-[10px] text-zinc-700 mt-0.5">
+              85% min confidence &middot; Paper mode until proven &middot; Quick in/out
+            </p>
+          </div>
+        </div>
+      </div>
+      </div>
     </div>
   );
 }

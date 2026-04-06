@@ -13,6 +13,7 @@ import {
   type MarketplaceTask,
 } from "./marketplaces/index.js";
 import * as dbTasks from "./db/tasks.js";
+import { wasTaskProcessed } from "./db/tasks.js";
 import { canAffordTask } from "./db/costs.js";
 import { searchPredictionMarkets, placePredictionTrade } from "./tools/predictions.js";
 import * as dbRevenue from "./db/revenue.js";
@@ -524,6 +525,9 @@ export function createHeartbeat(
 
     // Skip if already being processed (dedup by globalId)
     if (processing.has(mTask.globalId)) return;
+
+    // Skip if already processed in a previous session (persisted in SQLite)
+    if (wasTaskProcessed(mTask.globalId)) return;
 
     const version = `${mTask.globalId}:${mTask.status}`;
     if (processedVersions.get(mTask.globalId) === version) return;
