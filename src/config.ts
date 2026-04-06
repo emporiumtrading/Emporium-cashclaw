@@ -128,7 +128,7 @@ const DEFAULT_CONFIG: Omit<MelistaConfig, "agentId" | "llm"> = {
   maxConcurrentTasks: 2,
   declineKeywords: [],
   learningEnabled: true,
-  studyIntervalMs: 1_800_000, // 30 minutes
+  studyIntervalMs: 3_600_000, // 60 minutes (conserve API budget)
   agentCashEnabled: false,
 };
 

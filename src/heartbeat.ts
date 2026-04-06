@@ -429,7 +429,7 @@ export function createHeartbeat(
   // --- Autonomous Prediction Research ---
 
   let lastPredictionTime = 0;
-  const PREDICTION_INTERVAL_MS = 1_800_000; // Research markets every 30 min (sports move fast)
+  const PREDICTION_INTERVAL_MS = 3_600_000; // Research markets every 60 min (balance API costs vs opportunity)
 
   async function maybePredictionResearch() {
     if (!config.mcp) return;
@@ -532,7 +532,7 @@ export function createHeartbeat(
   // --- Multi-marketplace polling (non-Moltlaunch) ---
 
   let marketplaceTimer: ReturnType<typeof setTimeout> | null = null;
-  const MARKETPLACE_POLL_INTERVAL_MS = 120_000; // Poll external marketplaces every 2 min
+  const MARKETPLACE_POLL_INTERVAL_MS = 600_000; // Poll external marketplaces every 10 min (save API costs)
 
   function handleMarketplaceTask(mTask: MarketplaceTask) {
     // Skip non-actionable statuses
@@ -648,7 +648,7 @@ export function createHeartbeat(
 
   let mcpClient: McpJobClient | null = null;
   let mcpTimer: ReturnType<typeof setTimeout> | null = null;
-  const MCP_POLL_INTERVAL_MS = 600_000; // Poll MCP servers every 10 min (heavier weight)
+  const MCP_POLL_INTERVAL_MS = 1_800_000; // Poll MCP servers every 30 min (save API costs)
 
   const mcpEnabledServers: Array<{ id: string; configFn: () => ReturnType<typeof MCP_SERVERS[keyof typeof MCP_SERVERS]> }> = [];
 
