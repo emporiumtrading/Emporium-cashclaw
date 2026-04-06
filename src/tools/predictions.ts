@@ -34,24 +34,30 @@ export const searchPredictionMarkets: Tool = {
 
       // Filter "closing soon" to markets ending within 6 hours
       const now = Date.now();
-      const closingSoon = (bySoon as Array<Record<string, unknown>>).filter((m) => {
-        const end = m.endDate as string | undefined;
-        if (!end) return false;
+      const soonArray = Array.isArray(bySoon) ? bySoon : [];
+      const closingSoon = soonArray.filter((m) => {
+        if (!m || typeof m !== "object") return false;
+        const end = (m as Record<string, unknown>).endDate ?? (m as Record<string, unknown>).end_date;
+        if (!end || typeof end !== "string") return false;
         try {
-          const endMs = new Date(end as string).getTime();
+          const endMs = new Date(end).getTime();
+          if (isNaN(endMs)) return false;
           const hoursLeft = (endMs - now) / 3600000;
           return hoursLeft > 0 && hoursLeft <= 6;
         } catch { return false; }
       });
 
       // Combine and deduplicate
+      const volArray = Array.isArray(byVolume) ? byVolume : [];
       const seen = new Set<string>();
       const combined: Array<Record<string, unknown>> = [];
-      for (const m of [...closingSoon, ...(byVolume as Array<Record<string, unknown>>)]) {
-        const id = String(m.id ?? m.conditionId ?? "");
+      for (const m of [...closingSoon, ...volArray]) {
+        if (!m || typeof m !== "object") continue;
+        const rec = m as Record<string, unknown>;
+        const id = String(rec.id ?? rec.conditionId ?? Math.random());
         if (!seen.has(id)) {
           seen.add(id);
-          combined.push(m);
+          combined.push(rec);
         }
       }
 
@@ -76,16 +82,19 @@ function formatMarkets(markets: Array<Record<string, unknown>>, query: string, c
 
     // Calculate time remaining
     let timeTag = "";
-    const end = m.endDate as string | undefined;
-    if (end) {
+    const end = m.endDate ?? m.end_date ?? m.endDateIso;
+    if (end && typeof end === "string") {
       try {
-        const hoursLeft = (new Date(end).getTime() - now) / 3600000;
-        if (hoursLeft <= 0) timeTag = "CLOSED";
-        else if (hoursLeft <= 1) timeTag = `⚡ ${(hoursLeft * 60).toFixed(0)}min LEFT — URGENT`;
-        else if (hoursLeft <= 3) timeTag = `🔥 ${hoursLeft.toFixed(1)}h LEFT — ACT NOW`;
-        else if (hoursLeft <= 6) timeTag = `⏰ ${hoursLeft.toFixed(1)}h left`;
-        else if (hoursLeft <= 24) timeTag = `${hoursLeft.toFixed(0)}h left`;
-        else timeTag = `${(hoursLeft / 24).toFixed(0)}d left`;
+        const endMs = new Date(end).getTime();
+        if (!isNaN(endMs)) {
+          const hoursLeft = (endMs - now) / 3600000;
+          if (hoursLeft <= 0) timeTag = "CLOSED";
+          else if (hoursLeft <= 1) timeTag = `⚡ ${Math.round(hoursLeft * 60)}min LEFT`;
+          else if (hoursLeft <= 3) timeTag = `🔥 ${Math.round(hoursLeft * 10) / 10}h LEFT`;
+          else if (hoursLeft <= 6) timeTag = `⏰ ${Math.round(hoursLeft)}h left`;
+          else if (hoursLeft <= 24) timeTag = `${Math.round(hoursLeft)}h left`;
+          else timeTag = `${Math.round(hoursLeft / 24)}d left`;
+        }
       } catch { /* ignore */ }
     }
 
