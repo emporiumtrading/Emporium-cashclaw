@@ -366,6 +366,31 @@ export function getWhopMcpConfig(): McpServerConfig {
   };
 }
 
+// --- Prediction Markets ---
+
+export function getPredictionMarketMcpConfig(): McpServerConfig {
+  return {
+    name: "Prediction Markets (Polymarket + Kalshi)",
+    command: "npx",
+    args: ["-y", "prediction-market-mcp"],
+    searchTool: "get_markets",
+    searchArgs: { limit: 10 },
+    normalise: () => [],
+  };
+}
+
+export function getKalshiMcpConfig(apiKey?: string): McpServerConfig {
+  return {
+    name: "Kalshi (Regulated US)",
+    command: "npx",
+    args: ["-y", "@iqai/mcp-kalshi"],
+    env: apiKey ? { KALSHI_API_KEY: apiKey } : {},
+    searchTool: "get_markets",
+    searchArgs: { status: "open", limit: 10 },
+    normalise: () => [],
+  };
+}
+
 /** All available MCP server configs */
 export const MCP_SERVERS = {
   "mcp-jobs": getMcpJobsConfig,
@@ -373,6 +398,8 @@ export const MCP_SERVERS = {
   "jobspy": getJobSpyConfig,
   "clawgig": getClawGigConfig,
   "remotion": getRemotionMcpConfig,
+  "predictions": getPredictionMarketMcpConfig,
+  "kalshi": getKalshiMcpConfig,
   "whop": getWhopMcpConfig,
   "upwork": getUpworkMcpConfig,
   "himalayas": getHimalayasMcpConfig,

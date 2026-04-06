@@ -556,6 +556,13 @@ export function createHeartbeat(
     if ((config.mcp as Record<string, unknown>).enableRemotion) {
       mcpEnabledServers.push({ id: "remotion", configFn: MCP_SERVERS["remotion"] });
     }
+    if ((config.mcp as Record<string, unknown>).enablePredictions) {
+      mcpEnabledServers.push({ id: "predictions", configFn: MCP_SERVERS["predictions"] });
+    }
+    if ((config.mcp as Record<string, unknown>).enableKalshi) {
+      const kalshiKey = (config.mcp as Record<string, unknown>).kalshiApiKey as string | undefined;
+      mcpEnabledServers.push({ id: "kalshi", configFn: () => MCP_SERVERS["kalshi"](kalshiKey) });
+    }
     if ((config.mcp as Record<string, unknown>).enableWhop) {
       mcpEnabledServers.push({ id: "whop", configFn: MCP_SERVERS["whop"] });
     }

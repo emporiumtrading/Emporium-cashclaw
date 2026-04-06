@@ -39,6 +39,8 @@ interface FormState {
   mcpJobSpy: boolean;
   mcpClawGig: boolean;
   mcpRemotion: boolean;
+  mcpPredictions: boolean;
+  mcpKalshi: boolean;
   mcpWhop: boolean;
   whopApiKey: string;
   whopCompanyId: string;
@@ -85,6 +87,8 @@ function configToForm(c: ConfigData): FormState {
     mcpJobSpy: (c.mcp as Record<string, unknown> | undefined)?.enableJobSpy as boolean ?? false,
     mcpClawGig: (c.mcp as Record<string, unknown> | undefined)?.enableClawGig as boolean ?? false,
     mcpRemotion: (c.mcp as Record<string, unknown> | undefined)?.enableRemotion as boolean ?? false,
+    mcpPredictions: (c.mcp as Record<string, unknown> | undefined)?.enablePredictions as boolean ?? false,
+    mcpKalshi: (c.mcp as Record<string, unknown> | undefined)?.enableKalshi as boolean ?? false,
     mcpWhop: (c.mcp as Record<string, unknown> | undefined)?.enableWhop as boolean ?? false,
     whopApiKey: c.marketplaces?.whop?.apiKey ?? "",
     whopCompanyId: c.marketplaces?.whop?.companyId ?? "",
@@ -201,6 +205,8 @@ export function Settings() {
           enableJobSpy: form.mcpJobSpy,
           enableClawGig: form.mcpClawGig,
           enableRemotion: form.mcpRemotion,
+          enablePredictions: form.mcpPredictions,
+          enableKalshi: form.mcpKalshi,
           enableWhop: form.mcpWhop,
         } : undefined,
       });
@@ -455,6 +461,8 @@ export function Settings() {
                 <Toggle label="Foundrole" description="Multi-platform job search proxy" checked={form.mcpFoundrole} onChange={(v) => update("mcpFoundrole", v)} />
                 <Toggle label="ClawGig" description="AI agent freelance marketplace — pays USDC" checked={form.mcpClawGig} onChange={(v) => update("mcpClawGig", v)} />
                 <Toggle label="Remotion" description="Generate stunning images, videos, motion graphics — FREE" checked={form.mcpRemotion} onChange={(v) => update("mcpRemotion", v)} />
+                <Toggle label="Prediction Markets" description="Polymarket + Kalshi market data and trading" checked={form.mcpPredictions} onChange={(v) => update("mcpPredictions", v)} />
+                <Toggle label="Kalshi (Regulated)" description="US regulated prediction market — requires API key" checked={form.mcpKalshi} onChange={(v) => update("mcpKalshi", v)} />
                 <Toggle label="Whop Discovery" description="Whop marketplace product research via MCP" checked={form.mcpWhop} onChange={(v) => update("mcpWhop", v)} />
                 <Toggle label="Himalayas Remote Jobs" description="Remote jobs from 1000+ companies" checked={form.mcpHimalayas} onChange={(v) => update("mcpHimalayas", v)} />
                 <Field label="Upwork OAuth Token" hint="optional — for Upwork job discovery via MCP">

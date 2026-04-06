@@ -85,6 +85,9 @@ export interface MelistaConfig {
     enableJobSpy?: boolean;
     enableClawGig?: boolean;
     enableRemotion?: boolean;
+    enablePredictions?: boolean;
+    enableKalshi?: boolean;
+    kalshiApiKey?: string;
   };
 }
 

@@ -123,6 +123,8 @@ export interface ConfigData {
     enableJobSpy?: boolean;
     enableClawGig?: boolean;
     enableRemotion?: boolean;
+    enablePredictions?: boolean;
+    enableKalshi?: boolean;
     enableWhop?: boolean;
   };
 }

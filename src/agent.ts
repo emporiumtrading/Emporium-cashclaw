@@ -22,6 +22,7 @@ import { loadChat, appendChat, clearChat } from "./memory/chat.js";
 import { agentcashBalance } from "./tools/agentcash.js";
 import * as cli from "./moltlaunch/cli.js";
 import { getDb, migrateFromJson } from "./db/index.js";
+import { initPredictionsTables, getOpenPositions, getAllPositions, getPredictionStats, getDailyPnl } from "./predictions/strategy.js";
 import * as dbSessions from "./db/sessions.js";
 import * as dbTasks from "./db/tasks.js";
 import * as dbRevenue from "./db/revenue.js";
@@ -82,6 +83,7 @@ export async function startAgent(): Promise<http.Server> {
   // Initialize database and migrate any legacy JSON data
   const database = getDb();
   migrateFromJson(database);
+  initPredictionsTables();
   dbSessions.cleanExpiredSessions();
 
   const configured = isConfigured();
@@ -411,6 +413,20 @@ function handleApi(
         repeat: dbClients.getRepeatClients(),
         total: dbClients.getClientCount(),
       });
+      break;
+
+    // --- Predictions ---
+
+    case "/api/predictions/positions":
+      json(res, { open: getOpenPositions(), history: getAllPositions(30) });
+      break;
+
+    case "/api/predictions/stats":
+      json(res, getPredictionStats());
+      break;
+
+    case "/api/predictions/daily":
+      json(res, { days: getDailyPnl(30) });
       break;
 
     // --- Whop Products & Orders ---
