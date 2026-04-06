@@ -8,6 +8,13 @@ export interface LLMConfig {
   apiKey: string;
 }
 
+/** Free LLM for non-revenue tasks (study, predictions, market scanning) */
+export interface FreeLLMConfig {
+  provider: "openrouter";
+  model: string;
+  apiKey: string;
+}
+
 export interface PricingConfig {
   strategy: "fixed" | "complexity";
   baseRateEth: string;
@@ -78,6 +85,8 @@ export interface MelistaConfig {
   auth?: AuthConfig;
   e2bApiKey?: string;
   predictionBankroll?: number;
+  /** Free LLM via OpenRouter for study/predictions/scanning — saves API budget */
+  freeLlm?: FreeLLMConfig;
   mcp?: {
     upworkToken?: string;
     enableHimalayas?: boolean;

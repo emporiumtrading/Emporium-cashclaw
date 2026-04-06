@@ -1,6 +1,7 @@
 import WebSocket from "ws";
 import type { MelistaConfig } from "./config.js";
 import type { LLMProvider } from "./llm/types.js";
+import { createLLMProvider } from "./llm/index.js";
 import type { Task } from "./moltlaunch/types.js";
 import * as cli from "./moltlaunch/cli.js";
 import { runAgentLoop, type LoopResult } from "./loop/index.js";
@@ -58,6 +59,17 @@ export function createHeartbeat(
   config: MelistaConfig,
   llm: LLMProvider,
 ) {
+  // Create free LLM for non-revenue tasks (study, predictions, scanning)
+  let freeLlm: LLMProvider | null = null;
+  if (config.freeLlm?.apiKey) {
+    freeLlm = createLLMProvider(config.freeLlm);
+    console.log(`[LLM] Free model active: ${config.freeLlm.model} via OpenRouter`);
+  }
+  /** Use free LLM when available, fall back to paid */
+  const getLlmForTask = (taskType: "revenue" | "study" | "prediction" | "scan"): LLMProvider => {
+    if (taskType === "revenue") return llm; // Always use paid for revenue tasks
+    return freeLlm ?? llm; // Use free for everything else if available
+  };
   // Initialise multi-marketplace system
   const multiMarketplace: MultiMarketplace = createMultiMarketplace(
     config,
@@ -408,7 +420,7 @@ export function createHeartbeat(
     emit({ type: "study", message: "Starting study session..." });
 
     try {
-      const result = await runStudySession(llm, config);
+      const result = await runStudySession(getLlmForTask("study"), config);
       state.lastStudyTime = Date.now();
       state.totalStudySessions++;
 
@@ -429,7 +441,7 @@ export function createHeartbeat(
   // --- Autonomous Prediction Research ---
 
   let lastPredictionTime = 0;
-  const PREDICTION_INTERVAL_MS = 3_600_000; // Research markets every 60 min (balance API costs vs opportunity)
+  const PREDICTION_INTERVAL_MS = 1_800_000; // Research markets every 30 min (FREE via OpenRouter when available)
 
   async function maybePredictionResearch() {
     if (!config.mcp) return;
@@ -503,7 +515,7 @@ export function createHeartbeat(
         // Run a quick agent loop (max 3 turns to save tokens)
         const savedMaxTurns = config.maxLoopTurns;
         config.maxLoopTurns = 3;
-        await runAgentLoop(llm, analysisTask, config);
+        await runAgentLoop(getLlmForTask("prediction"), analysisTask, config);
         config.maxLoopTurns = savedMaxTurns;
       }
       // Also check if any open positions should be auto-resolved
@@ -514,13 +526,13 @@ export function createHeartbeat(
           id: "auto-resolve",
           agentId: config.agentId,
           clientAddress: "self",
-          task: `You have ${openPositions.length} open prediction position(s). Check if any have resolved:\n\n${openPositions.map((p) => `- ${p.market} | ${p.outcome} @ ${(p.entryPrice * 100).toFixed(1)}% | $${p.costBasis.toFixed(2)} | Opened: ${new Date(p.openedAt).toLocaleDateString()}`).join("\n")}\n\nFor each position: research whether the event has occurred. If it has resolved, use resolve_prediction with the trade_id, P&L result, and what you learned. If still open, leave it. Be accurate — only resolve if you are CERTAIN of the outcome.`,
+          task: `Today is ${new Date().toISOString().slice(0, 10)}. You have ${openPositions.length} open prediction position(s):\n\n${openPositions.map((p) => `- ID: ${p.id} | ${p.market} | ${p.outcome} @ ${(p.entryPrice * 100).toFixed(1)}% | $${p.costBasis.toFixed(2)} | Opened: ${new Date(p.openedAt).toLocaleDateString()}`).join("\n")}\n\nIMPORTANT RULES:\n- ONLY resolve a trade if the event has DEFINITIVELY occurred (game is over, deadline has passed, result announced)\n- If the event has NOT happened yet or the deadline is in the future, DO NOT resolve — leave it open\n- Do NOT resolve trades based on speculation about future outcomes\n- If unsure, leave the trade open\n\nFor resolved trades: use resolve_prediction with trade_id, actual P&L, and lesson learned.`,
           status: "accepted",
         };
 
         const savedMaxTurns = config.maxLoopTurns;
         config.maxLoopTurns = 3;
-        await runAgentLoop(llm, resolveTask, config);
+        await runAgentLoop(getLlmForTask("prediction"), resolveTask, config);
         config.maxLoopTurns = savedMaxTurns;
       }
     } catch (err) {
