@@ -447,10 +447,38 @@ export function createHeartbeat(
 
       // Search for markets — anything resolving soon for quick daily profits
       const queries = [
-        "sports NBA NFL soccer Premier League", "crypto bitcoin ethereum solana",
-        "economy inflation rates", "AI tech regulation", "trending",
-        "football Champions League La Liga", "tennis UFC boxing MMA",
-        "elections politics global", "weather climate", "entertainment awards",
+        // Global Sports
+        "NBA basketball today", "NFL football american", "Premier League EPL soccer",
+        "Champions League UEFA football", "La Liga Serie A Bundesliga Ligue 1",
+        "cricket IPL T20 World Cup", "tennis ATP WTA Grand Slam",
+        "UFC MMA boxing fight", "Formula 1 F1 MotoGP racing",
+        "baseball MLB NHL hockey", "rugby World Cup Six Nations",
+        "Olympics athletics swimming", "golf PGA Tour",
+        // Regional Sports
+        "African Cup AFCON CAF football", "Copa Libertadores South America",
+        "J-League K-League Asian football", "A-League Australian sport",
+        "Indian Super League ISL kabaddi", "Copa America MLS",
+        // Crypto & Finance
+        "crypto bitcoin BTC price", "ethereum ETH solana SOL",
+        "DeFi memecoin altcoin", "forex USD EUR GBP JPY",
+        "stocks earnings NASDAQ SP500", "commodities gold oil",
+        // Economy & Policy
+        "economy inflation CPI", "Fed ECB interest rates",
+        "GDP employment jobs", "trade tariffs sanctions",
+        // Tech & AI
+        "AI artificial intelligence regulation", "tech Apple Google Meta",
+        "chip semiconductor NVIDIA", "cybersecurity data breach",
+        // Geopolitics
+        "elections politics global", "war conflict geopolitics",
+        "UN summit G7 G20 BRICS", "sanctions diplomacy",
+        // Culture & Entertainment
+        "entertainment awards Oscars Grammy", "music album release",
+        "gaming esports League Valorant", "streaming Netflix Disney",
+        // Science & Weather
+        "weather hurricane earthquake climate", "space NASA SpaceX launch",
+        "pandemic health WHO", "energy nuclear renewable",
+        // Trending & Misc
+        "trending viral today", "prediction market arbitrage",
       ];
       const query = queries[Math.floor(Date.now() / PREDICTION_INTERVAL_MS) % queries.length];
 
