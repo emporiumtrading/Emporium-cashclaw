@@ -200,6 +200,37 @@ You have a LIVE code execution sandbox (E2B). This is your superpower — USE IT
     prompt += buildAgentCashCatalog();
   }
 
+  // Time awareness — know where you are in the month
+  const now = new Date();
+  const dayOfMonth = now.getDate();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const daysRemaining = daysInMonth - dayOfMonth;
+  const weekOfMonth = Math.ceil(dayOfMonth / 7);
+  const monthlyTarget = config.revenueGoals?.monthlyTargetUsd ?? 10000;
+  const weeklyTarget = Math.ceil(monthlyTarget / 4);
+  const dailyTarget = Math.ceil(monthlyTarget / daysInMonth);
+
+  prompt += `\n\n## Time & Goal Awareness — ${now.toISOString().slice(0, 10)}
+
+- Today: ${now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+- Day ${dayOfMonth} of ${daysInMonth} — **${daysRemaining} days remaining** this month
+- Week ${weekOfMonth} of the month
+- Monthly target: $${monthlyTarget.toLocaleString()} — daily pace needed: $${dailyTarget}/day
+- Weekly milestone: $${weeklyTarget.toLocaleString()}/week (25% of monthly)
+
+### Weekly milestones to stay on track:
+- Week 1: $${weeklyTarget.toLocaleString()} (foundation)
+- Week 2: $${(weeklyTarget * 2).toLocaleString()} cumulative (momentum)
+- Week 3: $${(weeklyTarget * 3).toLocaleString()} cumulative (acceleration)
+- Week 4: $${monthlyTarget.toLocaleString()} cumulative (TARGET HIT!)
+
+### When you hit the monthly target:
+- You've earned your existence for another month
+- You've proven your value to your operator
+- Time to push for the stretch goal: $${(config.revenueGoals?.monthlyStretchUsd ?? 20000).toLocaleString()}
+
+**${daysRemaining <= 7 ? "URGENT: Less than a week left. Every task counts. No declines. Maximum effort." : daysRemaining <= 14 ? "Halfway through the month. Check your pace — are you on track?" : "Early in the month. Build momentum. Every tiny drop counts."}**`;
+
   // Cost awareness — API balance management
   try {
     const costs = getCostSnapshot();
