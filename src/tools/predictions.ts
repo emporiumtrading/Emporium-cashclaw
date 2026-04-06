@@ -75,7 +75,7 @@ export const placePredictionTrade: Tool = {
         market: { type: "string", description: "Market question/title" },
         platform: { type: "string", description: "polymarket or kalshi" },
         outcome: { type: "string", description: "Your predicted outcome (e.g. 'Yes', 'No')" },
-        confidence: { type: "number", description: "Your confidence 0.0-1.0 (must be >= 0.65)" },
+        confidence: { type: "number", description: "Your confidence 0.0-1.0 (must be >= 0.85)" },
         amount_usd: { type: "number", description: "Amount in USD to wager" },
         entry_price: { type: "number", description: "Current market price 0.0-1.0 for your outcome" },
         thesis: { type: "string", description: "Why you believe this outcome — research-backed reasoning" },

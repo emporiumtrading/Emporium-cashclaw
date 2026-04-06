@@ -122,7 +122,7 @@ export function Predictions() {
           <div>
             <p className="text-[13px] font-medium text-zinc-200">Risk Management Active</p>
             <p className="text-[11px] text-zinc-500 mt-0.5">
-              Max 5% per trade &middot; Max 25% total exposure &middot; 65% min confidence &middot; $50 daily loss limit &middot; Max 5 positions
+              Max 10% per trade &middot; Max 50% total exposure &middot; 85% min confidence &middot; $3 daily loss limit &middot; Max 5 positions
             </p>
           </div>
         </div>
@@ -254,7 +254,7 @@ export function Predictions() {
               Scanning: sports, crypto, economy, tech, politics, global events
             </p>
             <p className="text-[10px] text-zinc-700 mt-0.5">
-              85% min confidence &middot; Paper mode until proven &middot; Quick in/out
+              85% min confidence &middot; 10% max per trade &middot; Quick in/out daily
             </p>
           </div>
         </div>

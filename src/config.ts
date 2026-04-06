@@ -87,6 +87,7 @@ export interface MelistaConfig {
     enableRemotion?: boolean;
     enablePredictions?: boolean;
     enableKalshi?: boolean;
+    enableWhop?: boolean;
     kalshiApiKey?: string;
   };
 }

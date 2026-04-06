@@ -6,7 +6,7 @@
  * regardless of origin.
  */
 
-export type MarketplaceName = "moltlaunch" | "near" | "fetchai" | "autonolas" | "singularitynet" | "freelancer";
+export type MarketplaceName = "moltlaunch" | "near" | "fetchai" | "autonolas" | "singularitynet" | "freelancer" | "whop" | "mcp-jobs" | "foundrole" | "jobspy" | "clawgig" | "upwork-mcp" | "himalayas-mcp" | "whop-mcp";
 
 export type MarketplaceTaskStatus =
   | "requested"

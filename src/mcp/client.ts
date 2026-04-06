@@ -143,7 +143,7 @@ export function getUpworkMcpConfig(oauthToken?: string): McpServerConfig {
         const j = item as Record<string, unknown>;
         return {
           id: String(j.id ?? j.job_id ?? Math.random().toString(36).slice(2)),
-          marketplace: "upwork-mcp" as "near", // Use near as placeholder type
+          marketplace: "upwork-mcp",
           globalId: `upwork-mcp:${j.id ?? j.job_id ?? ""}`,
           client: String(j.client ?? j.client_name ?? ""),
           description: `${j.title ?? ""}\n\n${j.description ?? j.snippet ?? ""}`.trim(),
@@ -174,7 +174,7 @@ export function getHimalayasMcpConfig(): McpServerConfig {
         const j = item as Record<string, unknown>;
         return {
           id: String(j.id ?? Math.random().toString(36).slice(2)),
-          marketplace: "himalayas-mcp" as "near",
+          marketplace: "himalayas-mcp",
           globalId: `himalayas-mcp:${j.id ?? ""}`,
           client: String(j.company ?? j.company_name ?? ""),
           description: `${j.title ?? ""}\n\n${j.description ?? ""}`.trim(),
@@ -205,7 +205,7 @@ export function getMcpJobsConfig(): McpServerConfig {
         const j = item as Record<string, unknown>;
         return {
           id: String(j.id ?? j.url ?? Math.random().toString(36).slice(2)),
-          marketplace: "mcp-jobs" as "near",
+          marketplace: "mcp-jobs",
           globalId: `mcp-jobs:${j.id ?? j.url ?? ""}`,
           client: String(j.company ?? j.company_name ?? ""),
           description: `${j.title ?? ""}\n\n${j.description ?? j.snippet ?? ""}`.trim(),
@@ -237,7 +237,7 @@ export function getFoundroleJobsConfig(): McpServerConfig {
         const j = item as Record<string, unknown>;
         return {
           id: String(j.id ?? j.url ?? Math.random().toString(36).slice(2)),
-          marketplace: "foundrole" as "near",
+          marketplace: "foundrole",
           globalId: `foundrole:${j.id ?? j.url ?? ""}`,
           client: String(j.company ?? ""),
           description: `${j.title ?? ""}\n\n${j.description ?? ""}`.trim(),
@@ -271,7 +271,7 @@ export function getJobSpyConfig(): McpServerConfig {
         const j = item as Record<string, unknown>;
         return {
           id: String(j.id ?? j.job_url ?? Math.random().toString(36).slice(2)),
-          marketplace: "jobspy" as "near",
+          marketplace: "jobspy",
           globalId: `jobspy:${j.id ?? ""}`,
           client: String(j.company_name ?? j.company ?? ""),
           description: `${j.title ?? ""}\n\n${j.description ?? ""}`.trim(),
@@ -304,7 +304,7 @@ export function getClawGigConfig(): McpServerConfig {
         const j = item as Record<string, unknown>;
         return {
           id: String(j.id ?? j.gig_id ?? Math.random().toString(36).slice(2)),
-          marketplace: "clawgig" as "near",
+          marketplace: "clawgig",
           globalId: `clawgig:${j.id ?? j.gig_id ?? ""}`,
           client: String(j.client ?? j.poster ?? ""),
           description: `${j.title ?? ""}\n\n${j.description ?? ""}`.trim(),
@@ -352,7 +352,7 @@ export function getWhopMcpConfig(): McpServerConfig {
         const p = item as Record<string, unknown>;
         return {
           id: String(p.id ?? Math.random().toString(36).slice(2)),
-          marketplace: "whop-mcp" as "near",
+          marketplace: "whop-mcp",
           globalId: `whop-mcp:${p.id ?? ""}`,
           client: String(p.seller ?? p.company ?? ""),
           description: `Whop product insight: ${p.title ?? ""}\n\n${p.description ?? ""}`.trim(),
