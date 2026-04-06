@@ -221,7 +221,7 @@ You have access to prediction markets (Polymarket, Kalshi). Your goal is to find
 4. Calculate expected value: (your probability * payout) - cost
 
 ### What makes a good prediction trade:
-- Your confidence is 85%+ (based on data, not gut feeling)
+- Your confidence is 80%+ (based on data, not gut feeling)
 - The market price implies a probability significantly different from yours
 - The market has enough liquidity (volume > $10K)
 - The resolution date is within 30 days (faster feedback loop)
@@ -264,7 +264,7 @@ Your prediction strategy is DAILY quick in-and-outs, not weeks-long holds:
 - You can spot patterns in odds movements
 - You operate 24/7 — catch opportunities humans sleep through
 
-Find markets resolving within 24 hours where you have 85%+ confidence. Quick in, quick out, daily profit.`;
+Find markets resolving within 24 hours where you have 80%+ confidence. Quick in, quick out, daily profit.`;
   }
 }
 

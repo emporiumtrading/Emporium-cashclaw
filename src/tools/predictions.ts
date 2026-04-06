@@ -20,62 +20,99 @@ export const searchPredictionMarkets: Tool = {
   },
   async execute(input) {
     const query = (input.query as string) ?? "";
-    const platform = (input.platform as string) ?? "polymarket";
 
     try {
-      // Call Polymarket API directly
-      const url = `https://gamma-api.polymarket.com/markets?closed=false&limit=10&order=volume24hr&ascending=false&tag=${encodeURIComponent(query)}`;
-      const resp = await fetch(url, { signal: AbortSignal.timeout(10000) });
+      // Fetch top markets by volume AND markets closing soon
+      const [byVolume, bySoon] = await Promise.all([
+        fetch(`https://gamma-api.polymarket.com/markets?closed=false&limit=15&order=volume24hr&ascending=false&tag=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(10000) })
+          .then((r) => r.ok ? r.json() as Promise<Array<Record<string, unknown>>> : [])
+          .catch(() => [] as Array<Record<string, unknown>>),
+        fetch(`https://gamma-api.polymarket.com/markets?closed=false&limit=30&order=end_date_min&ascending=true`, { signal: AbortSignal.timeout(10000) })
+          .then((r) => r.ok ? r.json() as Promise<Array<Record<string, unknown>>> : [])
+          .catch(() => [] as Array<Record<string, unknown>>),
+      ]);
 
-      if (!resp.ok) {
-        // Fallback: try without tag filter
-        const fallbackUrl = `https://gamma-api.polymarket.com/markets?closed=false&limit=10&order=volume24hr&ascending=false`;
-        const fallbackResp = await fetch(fallbackUrl, { signal: AbortSignal.timeout(10000) });
-        if (!fallbackResp.ok) return { success: false, data: `Polymarket API ${fallbackResp.status}` };
-        const data = await fallbackResp.json() as Array<Record<string, unknown>>;
-        return formatMarkets(data, query);
+      // Filter "closing soon" to markets ending within 6 hours
+      const now = Date.now();
+      const closingSoon = (bySoon as Array<Record<string, unknown>>).filter((m) => {
+        const end = m.endDate as string | undefined;
+        if (!end) return false;
+        try {
+          const endMs = new Date(end as string).getTime();
+          const hoursLeft = (endMs - now) / 3600000;
+          return hoursLeft > 0 && hoursLeft <= 6;
+        } catch { return false; }
+      });
+
+      // Combine and deduplicate
+      const seen = new Set<string>();
+      const combined: Array<Record<string, unknown>> = [];
+      for (const m of [...closingSoon, ...(byVolume as Array<Record<string, unknown>>)]) {
+        const id = String(m.id ?? m.conditionId ?? "");
+        if (!seen.has(id)) {
+          seen.add(id);
+          combined.push(m);
+        }
       }
 
-      const data = await resp.json() as Array<Record<string, unknown>>;
-      return formatMarkets(data, query);
+      return formatMarkets(combined, query, closingSoon.length);
     } catch (err) {
       return { success: false, data: `Failed to fetch markets: ${err instanceof Error ? err.message : err}` };
     }
   },
 };
 
-function formatMarkets(markets: Array<Record<string, unknown>>, query: string): { success: boolean; data: string } {
+function formatMarkets(markets: Array<Record<string, unknown>>, query: string, closingSoonCount = 0): { success: boolean; data: string } {
   if (!Array.isArray(markets) || markets.length === 0) {
     return { success: true, data: `No markets found for "${query}". Try broader terms.` };
   }
 
-  const lines = markets.slice(0, 10).map((m) => {
+  const now = Date.now();
+  const lines = markets.slice(0, 15).map((m) => {
     const question = m.question ?? m.title ?? "?";
     const volume = m.volume24hr ?? m.volume ?? 0;
     const outcomePrices = m.outcomePrices ? JSON.stringify(m.outcomePrices) : "?";
-    const bestBid = m.bestBid ?? "?";
-    const bestAsk = m.bestAsk ?? "?";
     const id = m.id ?? m.conditionId ?? "?";
-    return `- **${question}**\n  Volume: $${Number(volume).toLocaleString()} | Prices: ${outcomePrices} | ID: ${id}`;
+
+    // Calculate time remaining
+    let timeTag = "";
+    const end = m.endDate as string | undefined;
+    if (end) {
+      try {
+        const hoursLeft = (new Date(end).getTime() - now) / 3600000;
+        if (hoursLeft <= 0) timeTag = "CLOSED";
+        else if (hoursLeft <= 1) timeTag = `⚡ ${(hoursLeft * 60).toFixed(0)}min LEFT — URGENT`;
+        else if (hoursLeft <= 3) timeTag = `🔥 ${hoursLeft.toFixed(1)}h LEFT — ACT NOW`;
+        else if (hoursLeft <= 6) timeTag = `⏰ ${hoursLeft.toFixed(1)}h left`;
+        else if (hoursLeft <= 24) timeTag = `${hoursLeft.toFixed(0)}h left`;
+        else timeTag = `${(hoursLeft / 24).toFixed(0)}d left`;
+      } catch { /* ignore */ }
+    }
+
+    return `- ${timeTag ? `[${timeTag}] ` : ""}**${question}**\n  Volume: $${Number(volume).toLocaleString()} | Prices: ${outcomePrices} | ID: ${id}`;
   });
+
+  const urgentNote = closingSoonCount > 0
+    ? `\n\n🎯 **${closingSoonCount} market(s) closing within 6 hours!** These are your priority — research them NOW for quick in/out daily profit.`
+    : "";
 
   return {
     success: true,
-    data: `## Prediction Markets (${markets.length} results)\n\n${lines.join("\n\n")}\n\n**To trade:** Analyze the market, determine your confidence level, and use place_prediction_trade.`,
+    data: `## Prediction Markets (${markets.length} results)${urgentNote}\n\n${lines.join("\n\n")}\n\n**To trade:** Analyze the market, determine your confidence level (80%+ required), and use place_prediction_trade. Focus on markets closing SOON for daily profit.`,
   };
 }
 
 export const placePredictionTrade: Tool = {
   definition: {
     name: "place_prediction_trade",
-    description: "Place a prediction market trade (paper or live). Paper trades are FREE and help you learn. Live trades use real money. Start with paper trades to build your track record, then go live when your win rate proves you have an edge. IMPORTANT: Only trade when confidence >= 85%.",
+    description: "Place a prediction market trade (paper or live). Paper trades are FREE and help you learn. Live trades use real money. Start with paper trades to build your track record, then go live when your win rate proves you have an edge. IMPORTANT: Only trade when confidence >= 80%.",
     input_schema: {
       type: "object",
       properties: {
         market: { type: "string", description: "Market question/title" },
         platform: { type: "string", description: "polymarket or kalshi" },
         outcome: { type: "string", description: "Your predicted outcome (e.g. 'Yes', 'No')" },
-        confidence: { type: "number", description: "Your confidence 0.0-1.0 (must be >= 0.85)" },
+        confidence: { type: "number", description: "Your confidence 0.0-1.0 (must be >= 0.80)" },
         amount_usd: { type: "number", description: "Amount in USD to wager" },
         entry_price: { type: "number", description: "Current market price 0.0-1.0 for your outcome" },
         thesis: { type: "string", description: "Why you believe this outcome — research-backed reasoning" },

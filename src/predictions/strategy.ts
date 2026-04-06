@@ -28,7 +28,7 @@ export interface PredictionConfig {
 export const DEFAULT_PREDICTION_CONFIG: PredictionConfig = {
   maxPositionPct: 10,          // Max 10% of balance per trade ($1 on $10)
   maxTotalExposurePct: 50,     // Max 50% of balance exposed (aggressive with small bankroll)
-  minConfidence: 0.85,         // Only trade when 85%+ confident — high conviction only
+  minConfidence: 0.80,         // Only trade when 80%+ confident — high conviction
   maxPositions: 5,             // Max 5 concurrent positions
   stopLossPct: 25,             // Stop loss at 25% down
   dailyLossLimitUsd: 3,       // Stop trading if down $3 in a day (30% of $10)
