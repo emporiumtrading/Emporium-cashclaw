@@ -509,13 +509,13 @@ export function createHeartbeat(
           id: "auto-predict",
           agentId: config.agentId,
           clientAddress: "self",
-          task: `URGENT PREDICTION SCAN — find markets closing within 1-3 HOURS:\n\n${result.data}\n\nPRIORITY: Markets tagged ⚡ or 🔥 are closing SOON — these are your daily profit opportunities.\n\nAnalyze EVERY category — not just sports:\n- Sports: game outcomes, spreads, over/unders\n- Crypto: price targets (BTC/ETH above/below X by tonight)\n- Politics: votes, announcements, deadlines happening TODAY\n- Economics: data releases, rate decisions\n- World events: conflicts, treaties, deadlines expiring today\n- Weather: storm paths, temperature records\n- Entertainment: awards, releases, viewership numbers\n- ANY market where you can research the answer faster than the crowd\n\nYour edge: You research in SECONDS what takes humans HOURS. Find markets where:\n1. The event is about to resolve (1-3 hours)\n2. Current odds don't match the likely outcome\n3. You have 80%+ confidence based on available information\n4. Volume is sufficient (>$10K) for the market to be real\n\nACTION REQUIRED: If ANY market meets these criteria, place a paper trade NOW using place_prediction_trade. Do not just analyze — EXECUTE. Every scan without a trade is a missed opportunity for daily profit.\n\nIf truly nothing qualifies at 80%+, that's ok — but be honest about whether you actually researched each market or just skimmed.`,
+          task: `URGENT PREDICTION SCAN — find markets closing within 1-6 HOURS:\n\n${result.data}\n\nPRIORITY: Markets tagged ⚡ or 🔥 are closing SOON.\n\nYOU HAVE THESE RESEARCH TOOLS — USE THEM before deciding:\n- get_sports_scores — check live scores, schedules, odds for ANY sport\n- get_crypto_price — check real-time BTC/ETH/SOL prices\n- get_weather — check actual temperature forecasts for weather markets\n- get_news — check breaking headlines for political/world event markets\n- execute_code — run Python scripts for deeper analysis, web scraping, social sentiment\n\nWORKFLOW FOR EACH CLOSING-SOON MARKET:\n1. See a market closing soon (⚡🔥⏰)\n2. CALL the appropriate research tool to get REAL DATA\n3. Compare real data to market odds\n4. If data shows 80%+ confidence the market is mispriced → place_prediction_trade\n\nEXAMPLES:\n- "BTC above $70K?" → get_crypto_price bitcoin → compare to market odds\n- "Knicks vs Hawks?" → get_sports_scores nba → check odds, injuries\n- "Seoul temp 13°C?" → get_weather Seoul → check actual forecast\n- "Iran ceasefire?" → get_news "Iran ceasefire" → check latest headlines\n- "FOKUS vs Wildcard CS?" → get_news "FOKUS Wildcard PGL" → check results\n\nDO NOT skip the research step. DO NOT guess. ALWAYS call at least one tool before trading.\nDO NOT just analyze the market list — RESEARCH then EXECUTE.`,
           status: "accepted",
         };
 
         // Run a quick agent loop (max 3 turns to save tokens)
         const savedMaxTurns = config.maxLoopTurns;
-        config.maxLoopTurns = 3;
+        config.maxLoopTurns = 5;
         await runAgentLoop(getLlmForTask("prediction"), analysisTask, config);
         config.maxLoopTurns = savedMaxTurns;
       }
@@ -532,7 +532,7 @@ export function createHeartbeat(
         };
 
         const savedMaxTurns = config.maxLoopTurns;
-        config.maxLoopTurns = 3;
+        config.maxLoopTurns = 5;
         await runAgentLoop(getLlmForTask("prediction"), resolveTask, config);
         config.maxLoopTurns = savedMaxTurns;
       }
