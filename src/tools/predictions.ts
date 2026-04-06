@@ -68,7 +68,7 @@ function formatMarkets(markets: Array<Record<string, unknown>>, query: string): 
 export const placePredictionTrade: Tool = {
   definition: {
     name: "place_prediction_trade",
-    description: "Place a prediction market trade (paper or live). Paper trades are FREE and help you learn. Live trades use real money. Start with paper trades to build your track record, then go live when your win rate proves you have an edge. IMPORTANT: Only trade when confidence >= 65%.",
+    description: "Place a prediction market trade (paper or live). Paper trades are FREE and help you learn. Live trades use real money. Start with paper trades to build your track record, then go live when your win rate proves you have an edge. IMPORTANT: Only trade when confidence >= 85%.",
     input_schema: {
       type: "object",
       properties: {

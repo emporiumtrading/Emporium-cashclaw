@@ -14,6 +14,7 @@ import {
 } from "./marketplaces/index.js";
 import * as dbTasks from "./db/tasks.js";
 import { canAffordTask } from "./db/costs.js";
+import { searchPredictionMarkets, placePredictionTrade } from "./tools/predictions.js";
 import * as dbRevenue from "./db/revenue.js";
 import * as dbClients from "./db/clients.js";
 import { McpJobClient, MCP_SERVERS } from "./mcp/client.js";
@@ -365,6 +366,8 @@ export function createHeartbeat(
 
     // Check if we should study while idle
     void maybeStudy();
+    // Check if we should research prediction markets
+    void maybePredictionResearch();
 
     // If WebSocket is connected, poll infrequently as a sync check
     if (state.wsConnected) {
@@ -418,6 +421,57 @@ export function createHeartbeat(
       state.lastStudyTime = Date.now();
     } finally {
       studying = false;
+    }
+  }
+
+  // --- Autonomous Prediction Research ---
+
+  let lastPredictionTime = 0;
+  const PREDICTION_INTERVAL_MS = 3_600_000; // Research markets every 1 hour
+
+  async function maybePredictionResearch() {
+    if (!config.mcp) return;
+    const mcpConfig = config.mcp as Record<string, unknown>;
+    if (!mcpConfig.enablePredictions && !mcpConfig.enableKalshi) return;
+    if (studying || processing.size > 0) return;
+    if (Date.now() - lastPredictionTime < PREDICTION_INTERVAL_MS) return;
+
+    // Check if we can afford it
+    const costCheck = canAffordTask("prediction");
+    if (!costCheck.allowed) return;
+
+    lastPredictionTime = Date.now();
+
+    try {
+      emit({ type: "study", message: "Autonomous prediction research — scanning markets..." });
+
+      // Search for top markets
+      const result = await searchPredictionMarkets.execute(
+        { query: "trending", platform: "polymarket" },
+        { config, taskId: "auto-predict" },
+      );
+
+      if (result.success && result.data.includes("**")) {
+        emit({ type: "study", message: `Prediction scan complete — found markets to analyze` });
+
+        // Use the LLM to analyze and potentially place paper trades
+        const analysisTask: Task = {
+          id: "auto-predict",
+          agentId: config.agentId,
+          clientAddress: "self",
+          task: `You just scanned prediction markets. Here are the results:\n\n${result.data}\n\nAnalyze these markets. If you find any where you have 85%+ confidence based on your knowledge, place a PAPER trade using place_prediction_trade with mode="paper". Include a detailed thesis. If nothing meets your 85% confidence threshold, that's fine — only trade when you have a genuine edge. Quality over quantity.`,
+          status: "accepted",
+        };
+
+        // Run a quick agent loop (max 3 turns to save tokens)
+        const savedMaxTurns = config.maxLoopTurns;
+        config.maxLoopTurns = 3;
+        await runAgentLoop(llm, analysisTask, config);
+        config.maxLoopTurns = savedMaxTurns;
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      emit({ type: "error", message: `Prediction research error: ${msg}` });
     }
   }
 
