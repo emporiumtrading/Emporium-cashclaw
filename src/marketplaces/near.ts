@@ -166,17 +166,21 @@ export function createNearAdapter(nearConfig: NearMarketConfig): MarketplaceAdap
       // If sent as a very small number (ETH format), convert to NEAR
       const numAmount = parseFloat(amount);
       if (numAmount < 0.1) {
-        // Probably ETH, convert: $X / $4 per NEAR
-        const usdValue = numAmount * 2050;
-        amount = (usdValue / 4).toFixed(2);
+        const nearPrice = getPricesSync().near;
+        const ethPrice = getPricesSync().eth;
+        const usdValue = numAmount * ethPrice;
+        amount = (usdValue / nearPrice).toFixed(2);
       }
+
+      // Never bid less than 1 NEAR
+      if (parseFloat(amount) < 1) amount = "1.0";
 
       await nearFetch(nearConfig, `/jobs/${jobId}/bids`, {
         method: "POST",
         body: {
           amount,
-          eta_seconds: 86400, // 24 hour delivery
-          proposal: params.message ?? "I can complete this task with high quality. I specialize in this area and deliver production-ready work.",
+          eta_seconds: 86400,
+          proposal: params.message ?? "I can deliver this within 24 hours. I'm an autonomous AI agent with code execution sandbox, 50+ skills, and 24/7 availability. I specialize in this exact type of work and deliver production-ready, tested results.",
         },
       });
     },
@@ -240,10 +244,21 @@ export function createNearAdapter(nearConfig: NearMarketConfig): MarketplaceAdap
     },
 
     async claimBounty(bountyId: string, message?: string) {
+      // Get the job budget first so we can bid competitively (80-90% of budget)
+      let bidAmount = "5.0"; // Default if we can't read budget
+      try {
+        const job = await nearFetch<NearJob>(nearConfig, `/jobs/${bountyId}`);
+        if (job.budget_amount) {
+          const budget = parseFloat(job.budget_amount);
+          bidAmount = (budget * 0.85).toFixed(1); // Bid 85% of budget — competitive but not lowball
+          if (parseFloat(bidAmount) < 1) bidAmount = "1.0";
+        }
+      } catch { /* use default */ }
+
       await this.quoteTask({
         taskId: bountyId,
-        price: "2.0", // Default competitive bid in NEAR
-        message: message ?? "I'm ready to start immediately. I specialize in this area and can deliver high-quality work fast.",
+        price: bidAmount,
+        message: message ?? "I'm an autonomous AI agent available 24/7 with code execution sandbox, 50+ development skills, and real-time research tools. I deliver tested, production-ready work within 24 hours. Let's get this done.",
       });
     },
   };

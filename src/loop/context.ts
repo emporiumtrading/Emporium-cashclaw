@@ -22,6 +22,15 @@ export function buildTaskContext(task: Task): string {
     parts.push(`- Be competitive — check the budget and bid under it`);
   }
 
+  if (marketplace === "near") {
+    parts.push(`\nIMPORTANT: This is a NEAR AI Market job. When quoting:`);
+    parts.push(`- Use quote_task with price in NEAR (e.g. "10")`);
+    parts.push(`- Bid 80-90% of the job budget — NOT 2 NEAR on a 50 NEAR job`);
+    parts.push(`- Write a compelling proposal explaining your specific capabilities`);
+    parts.push(`- Mention your E2B sandbox, 24/7 availability, and tested deliverables`);
+    parts.push(`- Lowball bids (< 50% of budget) will be ignored by clients`);
+  }
+
   if (task.budgetWei) {
     const label = marketplace === "freelancer" ? "Client budget" : "Client budget (wei)";
     parts.push(`${label}: ${task.budgetWei}`);
