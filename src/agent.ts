@@ -712,6 +712,9 @@ async function handleConfigUpdate(
     if (updates.e2bApiKey && updates.e2bApiKey !== "***") {
       ctx.config.e2bApiKey = updates.e2bApiKey;
     }
+    if (updates.predictionBankroll !== undefined) {
+      ctx.config.predictionBankroll = updates.predictionBankroll;
+    }
     if (updates.mcp) {
       const existing = ctx.config.mcp ?? {};
       const incoming = updates.mcp as Record<string, unknown>;

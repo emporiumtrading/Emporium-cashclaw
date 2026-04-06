@@ -227,7 +227,7 @@ export function createNearAdapter(nearConfig: NearMarketConfig): MarketplaceAdap
       );
 
       const jobList = Array.isArray(jobs) ? jobs : (jobs.data ?? []);
-      const nearPrice = 4;
+      const nearPrice = getPricesSync().near;
 
       return jobList.map((j) => ({
         id: j.job_id,

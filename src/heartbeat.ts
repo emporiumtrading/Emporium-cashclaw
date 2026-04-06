@@ -506,6 +506,23 @@ export function createHeartbeat(
         await runAgentLoop(llm, analysisTask, config);
         config.maxLoopTurns = savedMaxTurns;
       }
+      // Also check if any open positions should be auto-resolved
+      const { getOpenPositions, closeTrade } = await import("./predictions/strategy.js");
+      const openPositions = getOpenPositions();
+      if (openPositions.length > 0) {
+        const resolveTask: Task = {
+          id: "auto-resolve",
+          agentId: config.agentId,
+          clientAddress: "self",
+          task: `You have ${openPositions.length} open prediction position(s). Check if any have resolved:\n\n${openPositions.map((p) => `- ${p.market} | ${p.outcome} @ ${(p.entryPrice * 100).toFixed(1)}% | $${p.costBasis.toFixed(2)} | Opened: ${new Date(p.openedAt).toLocaleDateString()}`).join("\n")}\n\nFor each position: research whether the event has occurred. If it has resolved, use resolve_prediction with the trade_id, P&L result, and what you learned. If still open, leave it. Be accurate — only resolve if you are CERTAIN of the outcome.`,
+          status: "accepted",
+        };
+
+        const savedMaxTurns = config.maxLoopTurns;
+        config.maxLoopTurns = 3;
+        await runAgentLoop(llm, resolveTask, config);
+        config.maxLoopTurns = savedMaxTurns;
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       emit({ type: "error", message: `Prediction research error: ${msg}` });

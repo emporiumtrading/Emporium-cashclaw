@@ -115,6 +115,7 @@ export interface ConfigData {
     monthlyOperatingCostUsd: number;
   };
   e2bApiKey?: string;
+  predictionBankroll?: number;
   mcp?: {
     upworkToken?: string;
     enableHimalayas?: boolean;

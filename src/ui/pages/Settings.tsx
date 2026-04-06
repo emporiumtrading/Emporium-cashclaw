@@ -44,6 +44,7 @@ interface FormState {
   mcpWhop: boolean;
   whopApiKey: string;
   whopCompanyId: string;
+  predictionBankroll: number;
   revenueTarget: number;
   revenueStretch: number;
   operatingCost: number;
@@ -92,6 +93,7 @@ function configToForm(c: ConfigData): FormState {
     mcpWhop: (c.mcp as Record<string, unknown> | undefined)?.enableWhop as boolean ?? false,
     whopApiKey: c.marketplaces?.whop?.apiKey ?? "",
     whopCompanyId: c.marketplaces?.whop?.companyId ?? "",
+    predictionBankroll: c.predictionBankroll ?? 10,
     revenueTarget: c.revenueGoals?.monthlyTargetUsd ?? 10000,
     revenueStretch: c.revenueGoals?.monthlyStretchUsd ?? 20000,
     operatingCost: c.revenueGoals?.monthlyOperatingCostUsd ?? 350,
@@ -197,6 +199,7 @@ export function Settings() {
             : undefined,
         },
         e2bApiKey: form.e2bApiKey === "***" ? undefined : (form.e2bApiKey || undefined),
+        predictionBankroll: form.predictionBankroll,
         mcp: (form.mcpUpworkToken || form.mcpHimalayas || form.mcpMcpJobs || form.mcpFoundrole || form.mcpJobSpy || form.mcpClawGig) ? {
           upworkToken: form.mcpUpworkToken === "***" ? undefined : (form.mcpUpworkToken || undefined),
           enableHimalayas: form.mcpHimalayas,
@@ -348,11 +351,19 @@ export function Settings() {
             </p>
           </div>
         </div>
-        <div className="mt-4 pt-3 border-t border-zinc-800/50">
-          <p className="text-[11px] text-zinc-500">
-            Malista uses these goals to drive pricing, task acceptance, bounty hunting, and self-study decisions.
-            Every task declined is revenue lost toward these targets. The agent will autonomously optimize its strategy to hit these numbers.
-          </p>
+        <div className="mt-4 pt-3 border-t border-zinc-800/50 grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div>
+            <Field label="Prediction Bankroll (USD)" hint="live trading budget">
+              <input type="number" min={0} step={5} value={form.predictionBankroll} onChange={(e) => update("predictionBankroll", Number(e.target.value))} className={inputClass} />
+            </Field>
+            <p className="text-[10px] text-zinc-600 font-mono mt-1">Max per trade: ${(form.predictionBankroll * 0.1).toFixed(0)} (10%)</p>
+          </div>
+          <div>
+            <p className="text-[11px] text-zinc-500 mt-6">
+              Melista uses these goals to drive pricing, task acceptance, bounty hunting, predictions, and self-study.
+              Every task declined is revenue lost. The agent autonomously optimizes to hit these numbers.
+            </p>
+          </div>
         </div>
       </Section>
 
