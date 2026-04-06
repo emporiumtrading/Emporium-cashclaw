@@ -21,6 +21,9 @@ export interface CostSnapshot {
   lifetimeOutputTokens: number;
   lifetimeCostUsd: number;
   lifetimeTasks: number;
+  /** Manually set by operator from Anthropic console */
+  manualBalance: number;
+  /** manual balance minus lifetime spend */
   estimatedBalanceRemaining: number;
   estimatedTasksRemaining: number;
   estimatedDaysRemaining: number;
@@ -68,10 +71,6 @@ export function recordLlmUsage(
   getDb().prepare(
     "INSERT INTO llm_costs (date, task_type, input_tokens, output_tokens, cost_usd, task_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
   ).run(today, taskType, inputTokens, outputTokens, cost, taskId ?? null, Date.now());
-
-  // Deduct from balance
-  const currentBalance = getBudget("api_balance");
-  setBudget("api_balance", Math.max(0, currentBalance - cost));
 }
 
 export function getBudget(key: string): number {
@@ -99,9 +98,10 @@ export function getCostSnapshot(): CostSnapshot {
     FROM llm_costs
   `).get() as { inp: number; out: number; cost: number; tasks: number };
 
-  const balance = getBudget("api_balance");
+  const manualBalance = getBudget("api_balance"); // Set by operator from Anthropic console
+  const balance = Math.max(0, manualBalance - lifetimeStats.cost);
   const avgCost = lifetimeStats.tasks > 0 ? lifetimeStats.cost / lifetimeStats.tasks : 0.06;
-  const dailyCost = todayStats.cost > 0 ? todayStats.cost : avgCost * 10; // estimate 10 tasks/day
+  const dailyCost = todayStats.cost > 0 ? todayStats.cost : avgCost * 10;
 
   // Get lifetime revenue for efficiency calc
   const revenue = db.prepare("SELECT COALESCE(SUM(revenue_usd), 0) as rev FROM tasks WHERE revenue_usd > 0").get() as { rev: number };
@@ -116,6 +116,7 @@ export function getCostSnapshot(): CostSnapshot {
     lifetimeOutputTokens: lifetimeStats.out,
     lifetimeCostUsd: lifetimeStats.cost,
     lifetimeTasks: lifetimeStats.tasks,
+    manualBalance,
     estimatedBalanceRemaining: balance,
     estimatedTasksRemaining: avgCost > 0 ? Math.floor(balance / avgCost) : 0,
     estimatedDaysRemaining: dailyCost > 0 ? Math.floor(balance / dailyCost) : 0,

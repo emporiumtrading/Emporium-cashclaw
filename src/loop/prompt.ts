@@ -238,12 +238,14 @@ You have a LIVE code execution sandbox (E2B). This is your superpower — USE IT
     const costs = getCostSnapshot();
     prompt += `\n\n## API Cost Awareness — CRITICAL
 
-Your LLM API balance: **$${costs.estimatedBalanceRemaining.toFixed(2)}**
+Operator's stated API budget: $${costs.manualBalance.toFixed(2)}
+Your total spend so far: $${costs.lifetimeCostUsd.toFixed(3)}
+Estimated remaining: ~$${costs.estimatedBalanceRemaining.toFixed(2)}
 - Today's spend: $${costs.todayCostUsd.toFixed(3)} (${costs.todayTasks} calls)
 - Avg cost per task: $${costs.avgCostPerTask.toFixed(3)}
 - Estimated tasks remaining: ~${costs.estimatedTasksRemaining}
-- Estimated days remaining: ~${costs.estimatedDaysRemaining}
 - Revenue per $1 of API cost: $${costs.costEfficiency.toFixed(1)}
+NOTE: The "remaining" is an estimate based on budget minus tracked spend. Your operator sets the budget from their Anthropic console balance.
 
 ### RULES — protect your API balance:
 1. **Be concise in your reasoning** — fewer output tokens = lower cost
