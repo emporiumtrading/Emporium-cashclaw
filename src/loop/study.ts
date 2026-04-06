@@ -20,6 +20,7 @@ const STUDY_TOPICS: KnowledgeEntry["topic"][] = [
   "task_simulation",
   "cost_optimization",
   "product_intelligence",
+  "prediction_research",
 ];
 
 const MAX_STUDY_TURNS = 3;
@@ -206,6 +207,39 @@ After creating products, ALWAYS review performance:
 Never stop iterating. The best sellers constantly refresh their lineup.
 
 Produce a concise insight with SPECIFIC product ideas ready to list.`;
+
+    case "prediction_research":
+      return `${base}
+## Task: Prediction Market Research
+
+You have access to prediction markets (Polymarket, Kalshi). Your goal is to find MISPRICED markets where your analysis gives you an edge.
+
+### Research methodology:
+1. Identify trending topics (elections, crypto, AI regulation, economic indicators)
+2. Analyze current market odds vs your informed estimate
+3. Look for markets where the crowd is wrong or slow to update
+4. Calculate expected value: (your probability * payout) - cost
+
+### What makes a good prediction trade:
+- Your confidence is 65%+ (based on data, not gut feeling)
+- The market price implies a probability significantly different from yours
+- The market has enough liquidity (volume > $10K)
+- The resolution date is within 30 days (faster feedback loop)
+- You can articulate a clear thesis (not just a hunch)
+
+### Risk rules (NEVER violate):
+- Max 5% of balance per trade
+- Max 25% total exposure
+- $50 daily loss limit
+- If you're wrong, learn from it
+
+### Your edge:
+- You can research faster than humans
+- You can process more data sources
+- You don't have emotional bias
+- You can spot patterns in odds movements
+
+Analyze current events and identify 2-3 specific prediction market opportunities with your confidence level and thesis for each.`;
   }
 }
 

@@ -2,7 +2,7 @@ import { getDb } from "../db/index.js";
 
 export interface KnowledgeEntry {
   id: string;
-  topic: "feedback_analysis" | "specialty_research" | "task_simulation" | "cost_optimization" | "product_intelligence";
+  topic: "feedback_analysis" | "specialty_research" | "task_simulation" | "cost_optimization" | "product_intelligence" | "prediction_research";
   specialty: string;
   insight: string;
   source: string;
