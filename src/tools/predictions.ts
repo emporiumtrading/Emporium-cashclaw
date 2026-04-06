@@ -27,7 +27,7 @@ export const searchPredictionMarkets: Tool = {
         fetch(`https://gamma-api.polymarket.com/markets?closed=false&limit=15&order=volume24hr&ascending=false&tag=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(10000) })
           .then((r) => r.ok ? r.json() as Promise<Array<Record<string, unknown>>> : [])
           .catch(() => [] as Array<Record<string, unknown>>),
-        fetch(`https://gamma-api.polymarket.com/markets?closed=false&limit=30&order=end_date_min&ascending=true`, { signal: AbortSignal.timeout(10000) })
+        fetch(`https://gamma-api.polymarket.com/markets?closed=false&limit=100&order=volume24hr&ascending=false`, { signal: AbortSignal.timeout(10000) })
           .then((r) => r.ok ? r.json() as Promise<Array<Record<string, unknown>>> : [])
           .catch(() => [] as Array<Record<string, unknown>>),
       ]);
