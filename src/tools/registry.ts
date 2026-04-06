@@ -22,7 +22,7 @@ import { searchSkills, listAllSkills } from "./skills.js";
 import { whopCreateProduct, whopListProducts, whopCheckRevenue } from "./whop.js";
 import { searchPredictionMarkets, placePredictionTrade, resolvePrediction, viewPredictionPositions } from "./predictions.js";
 import { getWeather } from "./weather.js";
-import { getCryptoPrice, getNews, getSportsScores, getCryptoFearGreed, getEarthquakes, getForexRates, getWikipediaPageviews, getEconomicData } from "./research.js";
+import { getCryptoPrice, getNews, getSportsScores, getCryptoFearGreed, getEarthquakes, getForexRates, getWikipediaPageviews, getEconomicData, getMarketDetails } from "./research.js";
 
 const BASE_TOOLS: Tool[] = [
   readTask,
@@ -62,7 +62,7 @@ function buildToolMap(config: MelistaConfig): Map<string, Tool> {
   const PREDICTION_TOOLS: Tool[] = [
     searchPredictionMarkets, placePredictionTrade, resolvePrediction, viewPredictionPositions,
     getWeather, getCryptoPrice, getCryptoFearGreed, getNews, getSportsScores,
-    getEarthquakes, getForexRates, getWikipediaPageviews, getEconomicData,
+    getEarthquakes, getForexRates, getWikipediaPageviews, getEconomicData, getMarketDetails,
   ];
   let tools = [...BASE_TOOLS, searchSkills, listAllSkills, ...WHOP_TOOLS, ...PREDICTION_TOOLS];
   if (config.agentCashEnabled) tools.push(...AGENTCASH_TOOLS);

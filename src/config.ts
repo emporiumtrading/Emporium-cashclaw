@@ -58,6 +58,7 @@ export interface MarketplacesConfig {
     userId?: string;
     searchKeywords?: string[];
     maxBidUsd?: number;
+    maxBidsPerMonth?: number;
   };
   whop?: {
     apiKey: string;

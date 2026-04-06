@@ -9,6 +9,47 @@ import type { Tool } from "./types.js";
 // ALL FREE — NO API KEYS NEEDED
 // ============================================================
 
+/** Get detailed Polymarket market info — resolution source, description, outcomes */
+export const getMarketDetails: Tool = {
+  definition: {
+    name: "get_market_details",
+    description: "Get detailed info about a specific Polymarket prediction market — full description, resolution source, outcomes, volume, liquidity. Use BEFORE trading to understand exactly what you're betting on.",
+    input_schema: {
+      type: "object",
+      properties: {
+        market_id: { type: "string", description: "Market ID or condition ID from search_prediction_markets" },
+      },
+      required: ["market_id"],
+    },
+  },
+  async execute(input) {
+    const id = input.market_id as string;
+    try {
+      const resp = await fetch(`https://gamma-api.polymarket.com/markets/${id}`, { signal: AbortSignal.timeout(10000) });
+      if (!resp.ok) return { success: false, data: `Market ${id} not found` };
+      const m = await resp.json() as Record<string, unknown>;
+
+      const lines = [
+        `## ${m.question ?? "?"}`,
+        ``,
+        `**Description:** ${(m.description as string ?? "").slice(0, 500)}`,
+        `**Resolution Source:** ${m.resolutionSource ?? "Not specified"}`,
+        `**End Date:** ${m.endDate ?? "?"}`,
+        `**Volume 24h:** $${Number(m.volume24hr ?? 0).toLocaleString()}`,
+        `**Total Volume:** $${Number(m.volume ?? 0).toLocaleString()}`,
+        `**Liquidity:** $${Number(m.liquidity ?? 0).toLocaleString()}`,
+        `**Outcomes:** ${m.outcomePrices ?? "?"}`,
+        `**Active:** ${m.active ?? "?"}`,
+        `**Closed:** ${m.closed ?? "?"}`,
+      ];
+
+      return { success: true, data: lines.join("\n") };
+    } catch (err) {
+      return { success: false, data: `Market details error: ${err instanceof Error ? err.message : err}` };
+    }
+  },
+};
+
 /** Crypto price lookup — CoinGecko FREE API */
 export const getCryptoPrice: Tool = {
   definition: {

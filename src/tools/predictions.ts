@@ -43,7 +43,7 @@ export const searchPredictionMarkets: Tool = {
           const endMs = new Date(end).getTime();
           if (isNaN(endMs)) return false;
           const hoursLeft = (endMs - now) / 3600000;
-          return hoursLeft > 0 && hoursLeft <= 6;
+          return hoursLeft > 0 && hoursLeft <= 3;
         } catch { return false; }
       });
 
@@ -91,7 +91,7 @@ function formatMarkets(markets: Array<Record<string, unknown>>, query: string, c
           if (hoursLeft <= 0) timeTag = "CLOSED";
           else if (hoursLeft <= 1) timeTag = `⚡ ${Math.round(hoursLeft * 60)}min LEFT`;
           else if (hoursLeft <= 3) timeTag = `🔥 ${Math.round(hoursLeft * 10) / 10}h LEFT`;
-          else if (hoursLeft <= 6) timeTag = `⏰ ${Math.round(hoursLeft)}h left`;
+          else if (hoursLeft <= 3) timeTag = `⏰ ${Math.round(hoursLeft)}h left`;
           else if (hoursLeft <= 24) timeTag = `${Math.round(hoursLeft)}h left`;
           else timeTag = `${Math.round(hoursLeft / 24)}d left`;
         }
@@ -102,7 +102,7 @@ function formatMarkets(markets: Array<Record<string, unknown>>, query: string, c
   });
 
   const urgentNote = closingSoonCount > 0
-    ? `\n\n🎯 **${closingSoonCount} market(s) closing within 6 hours!** These are your priority — research them NOW for quick in/out daily profit.`
+    ? `\n\n🎯 **${closingSoonCount} market(s) closing within 3 hours!** These are your priority — research them NOW for quick in/out daily profit.`
     : "";
 
   return {

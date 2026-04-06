@@ -25,6 +25,8 @@ export interface FreelancerConfig {
   searchKeywords?: string[];
   /** Max bid amount in USD */
   maxBidUsd?: number;
+  /** Monthly bid limit (free: 8, Plus: 50, default: 8) */
+  maxBidsPerMonth?: number;
 }
 
 const BASE_URL = "https://www.freelancer.com/api";
@@ -226,6 +228,26 @@ export function createFreelancerAdapter(flConfig: FreelancerConfig): Marketplace
 
       if (!flConfig.userId) {
         throw new Error("Freelancer userId not configured — needed for bidding");
+      }
+
+      // Enforce monthly bid limit — free accounts get ~8 bids/month
+      const maxBids = flConfig.maxBidsPerMonth ?? 8;
+      try {
+        const { getDb } = await import("../db/index.js");
+        const db = getDb();
+        const monthStart = new Date();
+        monthStart.setDate(1);
+        monthStart.setHours(0, 0, 0, 0);
+        const bidsThisMonth = (db.prepare(
+          "SELECT COUNT(*) as c FROM tasks WHERE marketplace = 'freelancer' AND created_at > ?"
+        ).get(monthStart.getTime()) as { c: number }).c;
+
+        if (bidsThisMonth >= maxBids) {
+          throw new Error(`Freelancer monthly bid limit reached (${bidsThisMonth}/${maxBids}). Save remaining bids for high-value projects or upgrade to Plus.`);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.message.includes("bid limit")) throw err;
+        // DB not available — continue cautiously
       }
 
       await flApi(flConfig, "/projects/0.1/bids/", {
