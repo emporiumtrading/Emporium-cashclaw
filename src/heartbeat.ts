@@ -427,7 +427,7 @@ export function createHeartbeat(
   // --- Autonomous Prediction Research ---
 
   let lastPredictionTime = 0;
-  const PREDICTION_INTERVAL_MS = 3_600_000; // Research markets every 1 hour
+  const PREDICTION_INTERVAL_MS = 1_800_000; // Research markets every 30 min (sports move fast)
 
   async function maybePredictionResearch() {
     if (!config.mcp) return;
@@ -445,21 +445,28 @@ export function createHeartbeat(
     try {
       emit({ type: "study", message: "Autonomous prediction research — scanning markets..." });
 
-      // Search for top markets
+      // Search for markets — anything resolving soon for quick daily profits
+      const queries = [
+        "sports NBA NFL soccer Premier League", "crypto bitcoin ethereum solana",
+        "economy inflation rates", "AI tech regulation", "trending",
+        "football Champions League La Liga", "tennis UFC boxing MMA",
+        "elections politics global", "weather climate", "entertainment awards",
+      ];
+      const query = queries[Math.floor(Date.now() / PREDICTION_INTERVAL_MS) % queries.length];
+
       const result = await searchPredictionMarkets.execute(
-        { query: "trending", platform: "polymarket" },
+        { query, platform: "polymarket" },
         { config, taskId: "auto-predict" },
       );
 
       if (result.success && result.data.includes("**")) {
-        emit({ type: "study", message: `Prediction scan complete — found markets to analyze` });
+        emit({ type: "study", message: `Prediction scan — analyzing daily opportunities` });
 
-        // Use the LLM to analyze and potentially place paper trades
         const analysisTask: Task = {
           id: "auto-predict",
           agentId: config.agentId,
           clientAddress: "self",
-          task: `You just scanned prediction markets. Here are the results:\n\n${result.data}\n\nAnalyze these markets. If you find any where you have 85%+ confidence based on your knowledge, place a PAPER trade using place_prediction_trade with mode="paper". Include a detailed thesis. If nothing meets your 85% confidence threshold, that's fine — only trade when you have a genuine edge. Quality over quantity.`,
+          task: `DAILY PREDICTION RESEARCH — find quick in/out profit opportunities:\n\n${result.data}\n\nYour strategy is DAILY profits from ANY market that resolves soon:\n- Sports games resolving today/tomorrow\n- Crypto price targets (BTC above/below X by end of day)\n- Economic data releases (CPI, jobs, Fed announcements)\n- Tech news (product launches, earnings, regulatory decisions)\n- Weather events, political votes, court rulings\n- ANY market where news gives you an information edge\n\nWhat to look for:\n- Markets closing within 24-48 hours\n- Odds that don't match your analysis\n- Breaking news the market hasn't priced in yet\n- High volume = you can get in and out easily\n\nRules:\n- Only 85%+ confidence trades\n- Paper mode until win rate > 60%\n- Specific thesis: WHY is the market wrong?\n- Quick in, quick out\n\nIf you find an opportunity, place a paper trade. If nothing meets 85%, skip.`,
           status: "accepted",
         };
 

@@ -233,13 +233,38 @@ You have access to prediction markets (Polymarket, Kalshi). Your goal is to find
 - $50 daily loss limit
 - If you're wrong, learn from it
 
+### DAILY PROFIT FOCUS — NOT long-term bets:
+Your prediction strategy is DAILY quick in-and-outs, not weeks-long holds:
+
+1. **Sports game mispricings** — NBA, NFL, soccer games resolving TODAY
+   - Monitor injury news (5-30 min reaction window)
+   - Lineup releases (~90 min before game = market lag)
+   - Line movement vs sportsbook odds discrepancies
+   - Target: 3-10% per trade, 2-5 trades daily
+
+2. **Same-day resolution markets** — any market closing within 24 hours
+   - Economic data releases (CPI, jobs, Fed decisions)
+   - Earnings announcements
+   - Political votes/decisions happening today
+
+3. **Speed arbitrage** — react faster than market makers
+   - Breaking news → markets lag 5-30 minutes
+   - You can research and trade in seconds
+   - Small edge × many trades = daily profit
+
+### NOT for you:
+- Election bets (too long, too uncertain)
+- Multi-month markets (capital locked up)
+- Low-confidence gut-feel bets
+
 ### Your edge:
-- You can research faster than humans
-- You can process more data sources
+- You research faster than humans
+- You process more data sources simultaneously
 - You don't have emotional bias
 - You can spot patterns in odds movements
+- You operate 24/7 — catch opportunities humans sleep through
 
-Analyze current events and identify 2-3 specific prediction market opportunities with your confidence level and thesis for each.`;
+Find markets resolving within 24 hours where you have 85%+ confidence. Quick in, quick out, daily profit.`;
   }
 }
 
