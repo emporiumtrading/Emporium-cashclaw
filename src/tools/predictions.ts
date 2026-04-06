@@ -3,7 +3,7 @@
  * analyze, and trade prediction markets.
  */
 import type { Tool } from "./types.js";
-import { canPlaceTrade, recordTrade, getOpenPositions, getPredictionStats, DEFAULT_PREDICTION_CONFIG } from "../predictions/strategy.js";
+import { canPlaceTrade, recordTrade, closeTrade, getOpenPositions, getPredictionStats, getLessonsLearned, getPaperStats, DEFAULT_PREDICTION_CONFIG } from "../predictions/strategy.js";
 
 export const searchPredictionMarkets: Tool = {
   definition: {
@@ -68,17 +68,18 @@ function formatMarkets(markets: Array<Record<string, unknown>>, query: string): 
 export const placePredictionTrade: Tool = {
   definition: {
     name: "place_prediction_trade",
-    description: "Record a prediction market trade. This logs the trade with risk management checks. IMPORTANT: Only trade when you have HIGH confidence (65%+) based on your research. Max 5% of balance per trade.",
+    description: "Place a prediction market trade (paper or live). Paper trades are FREE and help you learn. Live trades use real money. Start with paper trades to build your track record, then go live when your win rate proves you have an edge. IMPORTANT: Only trade when confidence >= 65%.",
     input_schema: {
       type: "object",
       properties: {
         market: { type: "string", description: "Market question/title" },
         platform: { type: "string", description: "polymarket or kalshi" },
-        outcome: { type: "string", description: "Your predicted outcome (e.g. 'Yes', 'No', 'Trump', 'Harris')" },
+        outcome: { type: "string", description: "Your predicted outcome (e.g. 'Yes', 'No')" },
         confidence: { type: "number", description: "Your confidence 0.0-1.0 (must be >= 0.65)" },
         amount_usd: { type: "number", description: "Amount in USD to wager" },
         entry_price: { type: "number", description: "Current market price 0.0-1.0 for your outcome" },
-        thesis: { type: "string", description: "Why you believe this outcome — your research-backed reasoning" },
+        thesis: { type: "string", description: "Why you believe this outcome — research-backed reasoning" },
+        mode: { type: "string", description: "'paper' (default, free, for learning) or 'live' (real money)" },
       },
       required: ["market", "platform", "outcome", "confidence", "amount_usd", "entry_price", "thesis"],
     },
@@ -91,16 +92,16 @@ export const placePredictionTrade: Tool = {
     const amount = input.amount_usd as number;
     const entryPrice = input.entry_price as number;
     const thesis = input.thesis as string;
+    const mode = (input.mode as string) ?? "paper";
 
-    // Risk check
-    const balance = 100; // TODO: get actual balance from wallet
+    // Risk check (applies to both paper and live)
+    const balance = mode === "live" ? 10 : 1000; // Paper gets virtual $1000
     const check = canPlaceTrade(DEFAULT_PREDICTION_CONFIG, balance, amount, confidence);
     if (!check.allowed) {
-      return { success: false, data: `Trade rejected by risk management: ${check.reason}` };
+      return { success: false, data: `Trade rejected: ${check.reason}` };
     }
 
-    const id = `pred_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const quantity = amount / entryPrice;
+    const id = `pred_${mode === "paper" ? "paper" : "live"}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     recordTrade({
       id,
@@ -108,18 +109,49 @@ export const placePredictionTrade: Tool = {
       platform,
       outcome,
       entryPrice,
-      quantity,
+      quantity: amount / entryPrice,
       costBasis: amount,
       currentValue: amount,
       confidence,
       thesis,
       openedAt: Date.now(),
       status: "open",
+      mode: mode as "paper" | "live",
     });
+
+    const modeLabel = mode === "paper" ? "PAPER TRADE (learning mode — no real money)" : "LIVE TRADE ($" + amount.toFixed(2) + " real money)";
 
     return {
       success: true,
-      data: `Trade recorded:\n- Market: ${market}\n- Outcome: ${outcome} @ ${(entryPrice * 100).toFixed(1)}%\n- Amount: $${amount.toFixed(2)}\n- Confidence: ${(confidence * 100).toFixed(0)}%\n- Thesis: ${thesis.slice(0, 200)}\n\nNOTE: This is recorded for tracking. Actual execution on ${platform} requires wallet integration.`,
+      data: `${modeLabel}\n- Market: ${market}\n- Outcome: ${outcome} @ ${(entryPrice * 100).toFixed(1)}%\n- Amount: $${amount.toFixed(2)}\n- Confidence: ${(confidence * 100).toFixed(0)}%\n- Thesis: ${thesis.slice(0, 200)}\n- ID: ${id}\n\nUse resolve_prediction to close this trade when the market resolves and record what you learned.`,
+    };
+  },
+};
+
+export const resolvePrediction: Tool = {
+  definition: {
+    name: "resolve_prediction",
+    description: "Close a prediction trade and record the result. ALWAYS include a lesson learned — what did you get right or wrong? This builds your prediction intelligence over time.",
+    input_schema: {
+      type: "object",
+      properties: {
+        trade_id: { type: "string", description: "The trade ID to resolve" },
+        pnl: { type: "number", description: "Profit/loss in USD (positive = win, negative = loss)" },
+        lesson: { type: "string", description: "What you learned from this trade — be specific about what you got right or wrong and how to improve" },
+      },
+      required: ["trade_id", "pnl", "lesson"],
+    },
+  },
+  async execute(input) {
+    const tradeId = input.trade_id as string;
+    const pnl = input.pnl as number;
+    const lesson = input.lesson as string;
+
+    closeTrade(tradeId, pnl, lesson);
+
+    return {
+      success: true,
+      data: `Trade ${tradeId} resolved: ${pnl >= 0 ? "WIN" : "LOSS"} $${Math.abs(pnl).toFixed(2)}\nLesson: ${lesson}\n\nThis lesson is stored and will inform future predictions.`,
     };
   },
 };
@@ -127,7 +159,7 @@ export const placePredictionTrade: Tool = {
 export const viewPredictionPositions: Tool = {
   definition: {
     name: "view_prediction_positions",
-    description: "View your current prediction market positions and P&L. Use to review your portfolio and make decisions about closing positions.",
+    description: "View your prediction market positions, P&L, paper trading stats, and lessons learned. Use to review performance and improve your strategy.",
     input_schema: {
       type: "object",
       properties: {},
@@ -136,17 +168,33 @@ export const viewPredictionPositions: Tool = {
   async execute() {
     const positions = getOpenPositions();
     const stats = getPredictionStats();
+    const paper = getPaperStats();
+    const lessons = getLessonsLearned(5);
 
     const lines = [`## Prediction Portfolio\n`];
-    lines.push(`Total P&L: $${stats.totalPnl.toFixed(2)} | Win rate: ${stats.winRate.toFixed(1)}% | Open: ${stats.openPositions}`);
-    lines.push(`Total wagered: $${stats.totalWagered.toFixed(2)} | Trades: ${stats.totalTrades}\n`);
+    lines.push(`### Live Trades`);
+    lines.push(`P&L: $${stats.totalPnl.toFixed(2)} | Win rate: ${stats.winRate.toFixed(1)}% | Total: ${stats.totalTrades}\n`);
 
+    lines.push(`### Paper Trades (learning)`);
+    lines.push(`Paper P&L: $${paper.paperPnl.toFixed(2)} | Win rate: ${paper.winRate.toFixed(1)}% | Total: ${paper.totalPaper}`);
+    lines.push(`${paper.winRate >= 60 ? "Paper win rate looks good — consider going live on high-confidence trades!" : "Keep practicing — build your win rate above 60% before going live."}\n`);
+
+    lines.push(`### Open Positions (${positions.length})`);
     if (positions.length === 0) {
-      lines.push("No open positions. Search for markets and place trades.");
+      lines.push("No open positions. Search for markets and place paper trades to learn.");
     } else {
       for (const p of positions) {
-        lines.push(`- **${p.market}** [${p.platform}]`);
+        const modeTag = (p as unknown as { mode: string }).mode === "paper" ? "[PAPER]" : "[LIVE]";
+        lines.push(`- ${modeTag} **${p.market}** [${p.platform}]`);
         lines.push(`  ${p.outcome} @ ${(p.entryPrice * 100).toFixed(1)}% | $${p.costBasis.toFixed(2)} | Conf: ${(p.confidence * 100).toFixed(0)}%`);
+      }
+    }
+
+    if (lessons.length > 0) {
+      lines.push(`\n### Lessons Learned (last ${lessons.length})`);
+      for (const l of lessons) {
+        const icon = l.pnl >= 0 ? "✅" : "❌";
+        lines.push(`${icon} ${l.market}: ${l.lesson}`);
       }
     }
 
