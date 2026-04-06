@@ -444,6 +444,12 @@ function handleApi(
       json(res, { days: getDailyPnl(30) });
       break;
 
+    // --- NEAR Bids ---
+
+    case "/api/bids/near":
+      handleNearBids(res, ctx);
+      break;
+
     // --- Whop Products & Orders ---
 
     case "/api/whop/products":
@@ -1057,6 +1063,43 @@ async function handleFreelancerBids(res: http.ServerResponse, ctx: ServerContext
     });
 
     json(res, { bids });
+  } catch (err) {
+    json(res, { bids: [], error: err instanceof Error ? err.message : "Failed" });
+  }
+}
+
+// --- NEAR bid handlers ---
+
+async function handleNearBids(res: http.ServerResponse, ctx: ServerContext) {
+  const nearConfig = ctx.config?.marketplaces?.near;
+  if (!nearConfig?.apiKey) { json(res, { bids: [], jobs: [], error: "NEAR not configured" }); return; }
+  try {
+    // Get bids
+    const bidsResp = await fetch("https://market.near.ai/v1/agents/me/bids", {
+      headers: { Authorization: `Bearer ${nearConfig.apiKey}` },
+      signal: AbortSignal.timeout(10000),
+    });
+    const bidsData = await bidsResp.json() as unknown;
+    const bids = Array.isArray(bidsData) ? bidsData : (bidsData as Record<string, unknown>).data ?? [];
+
+    // Get job details for each bid
+    const jobDetails: Record<string, unknown>[] = [];
+    for (const bid of (bids as Array<Record<string, unknown>>).slice(0, 10)) {
+      const jobId = bid.job_id as string;
+      if (!jobId) continue;
+      try {
+        const jobResp = await fetch(`https://market.near.ai/v1/jobs/${jobId}`, {
+          headers: { Authorization: `Bearer ${nearConfig.apiKey}` },
+          signal: AbortSignal.timeout(5000),
+        });
+        const job = await jobResp.json() as Record<string, unknown>;
+        jobDetails.push({ ...bid, job_title: job.title, job_description: (job.description as string ?? "").slice(0, 200), job_status: job.status, job_budget: job.budget_amount, job_budget_token: job.budget_token });
+      } catch {
+        jobDetails.push(bid as Record<string, unknown>);
+      }
+    }
+
+    json(res, { bids: jobDetails });
   } catch (err) {
     json(res, { bids: [], error: err instanceof Error ? err.message : "Failed" });
   }

@@ -1,6 +1,19 @@
 import { useState, useEffect } from "react";
 import { api, type FreelancerBid } from "../lib/api.js";
 
+interface NearBid {
+  bid_id: string;
+  job_id: string;
+  amount: string;
+  status: string;
+  job_title?: string;
+  job_description?: string;
+  job_status?: string;
+  job_budget?: string;
+  job_budget_token?: string;
+  created_at?: string;
+}
+
 const STATUS_COLORS: Record<string, string> = {
   pending: "text-amber-400 bg-amber-500/10 border-amber-500/20",
   awarded: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
@@ -31,6 +44,8 @@ function getBidStatus(bid: FreelancerBid): string {
 
 export function Bids() {
   const [bids, setBids] = useState<FreelancerBid[]>([]);
+  const [nearBids, setNearBids] = useState<NearBid[]>([]);
+  const [marketplace, setMarketplace] = useState<"all" | "freelancer" | "near">("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<FreelancerBid | null>(null);
@@ -44,6 +59,11 @@ export function Bids() {
 
   async function loadBids() {
     try {
+      // Load NEAR bids
+      api.getNearBids()
+        .then((d) => setNearBids((d.bids ?? []) as unknown as NearBid[]))
+        .catch(() => {});
+
       const data = await api.getFreelancerBids();
       setBids(data.bids);
       if (data.error) setError(data.error);
@@ -57,11 +77,15 @@ export function Bids() {
 
   const filtered = filter === "all" ? bids : bids.filter((b) => getBidStatus(b) === filter);
 
+  const nearTotal = nearBids.reduce((s, b) => s + parseFloat(b.amount || "0"), 0);
   const stats = {
-    total: bids.length,
-    pending: bids.filter((b) => getBidStatus(b) === "pending").length,
-    awarded: bids.filter((b) => getBidStatus(b) === "awarded").length,
+    total: bids.length + nearBids.length,
+    freelancerBids: bids.length,
+    nearBids: nearBids.length,
+    pending: bids.filter((b) => getBidStatus(b) === "pending").length + nearBids.filter((b) => b.status === "pending").length,
+    awarded: bids.filter((b) => getBidStatus(b) === "awarded").length + nearBids.filter((b) => b.status === "accepted").length,
     totalValue: bids.reduce((s, b) => s + b.amount, 0),
+    nearValue: nearTotal,
     avgBid: bids.length > 0 ? bids.reduce((s, b) => s + b.amount, 0) / bids.length : 0,
   };
 
@@ -75,13 +99,53 @@ export function Bids() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <StatCard label="Total Bids" value={stats.total} />
+        <StatCard label="Freelancer" value={stats.freelancerBids} />
+        <StatCard label="NEAR Market" value={`${stats.nearBids} (${stats.nearValue} NEAR)`} color="text-violet-400" />
         <StatCard label="Pending" value={stats.pending} color="text-amber-400" />
         <StatCard label="Awarded" value={stats.awarded} color="text-emerald-400" />
-        <StatCard label="Total Value" value={`$${stats.totalValue.toLocaleString()}`} />
-        <StatCard label="Avg Bid" value={`$${stats.avgBid.toFixed(0)}`} />
       </div>
 
-      {/* Filter */}
+      {/* Marketplace tabs */}
+      <div className="flex gap-1.5 mb-2">
+        {(["all", "freelancer", "near"] as const).map((m) => (
+          <button
+            key={m}
+            onClick={() => setMarketplace(m)}
+            className={`px-4 py-2 rounded-md text-[13px] font-medium transition-colors ${
+              marketplace === m ? "bg-violet-600 text-white" : "text-zinc-500 bg-zinc-800/50 hover:bg-zinc-800"
+            }`}
+          >
+            {m === "all" ? `All (${stats.total})` : m === "freelancer" ? `Freelancer (${stats.freelancerBids})` : `NEAR (${stats.nearBids})`}
+          </button>
+        ))}
+      </div>
+
+      {/* NEAR Bids */}
+      {(marketplace === "all" || marketplace === "near") && nearBids.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-bold text-violet-400 uppercase tracking-wider">NEAR AI Market</h3>
+          {nearBids.map((b) => (
+            <div key={b.bid_id} className="card p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-medium text-zinc-200">{b.job_title ?? `Job ${String(b.job_id).slice(0, 8)}...`}</p>
+                  {b.job_description && <p className="text-[11px] text-zinc-500 mt-0.5 truncate">{b.job_description}</p>}
+                  <p className="text-[10px] text-zinc-600 mt-1">NEAR AI Market &middot; {b.job_status ?? b.status}</p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="text-[15px] font-bold text-violet-400 font-mono">{b.amount} NEAR</span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${STATUS_COLORS[b.status] ?? STATUS_COLORS.pending}`}>{b.status}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Freelancer Filter */}
+      {(marketplace === "all" || marketplace === "freelancer") && (
+      <>
+      {marketplace === "all" && bids.length > 0 && <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mt-4">Freelancer.com</h3>}
       <div className="flex gap-1.5">
         {["all", "pending", "awarded", "rejected", "complete"].map((f) => (
           <button
@@ -204,6 +268,8 @@ export function Bids() {
             )}
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );

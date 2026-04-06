@@ -250,6 +250,7 @@ export const api = {
   getWhopRevenue: () => get<{ payments: unknown[]; total: number; count: number; error?: string }>("/api/whop/revenue"),
 
   // Bids
+  getNearBids: () => get<{ bids: Array<Record<string, unknown>>; error?: string }>("/api/bids/near"),
   getFreelancerBids: () => get<{ bids: FreelancerBid[]; error?: string }>("/api/bids/freelancer"),
 
   // Marketplace connection tests
