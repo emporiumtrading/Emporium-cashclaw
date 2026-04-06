@@ -715,6 +715,12 @@ async function handleConfigUpdate(
     if (updates.predictionBankroll !== undefined) {
       ctx.config.predictionBankroll = updates.predictionBankroll;
     }
+    if ((updates as Record<string, unknown>).freeLlm) {
+      const freeLlm = (updates as Record<string, unknown>).freeLlm as { provider: string; model: string; apiKey: string };
+      if (freeLlm.apiKey && freeLlm.apiKey !== "***") {
+        ctx.config.freeLlm = { provider: "openrouter", model: freeLlm.model, apiKey: freeLlm.apiKey };
+      }
+    }
     if (updates.mcp) {
       const existing = ctx.config.mcp ?? {};
       const incoming = updates.mcp as Record<string, unknown>;
