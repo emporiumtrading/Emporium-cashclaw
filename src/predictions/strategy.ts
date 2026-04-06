@@ -57,6 +57,15 @@ export interface Position {
 
 export function initPredictionsTables(): void {
   const db = getDb();
+
+  // Drop and recreate if schema is outdated (missing mode/lesson columns)
+  try {
+    db.prepare("SELECT mode FROM predictions LIMIT 1").get();
+  } catch {
+    db.exec("DROP TABLE IF EXISTS predictions");
+    db.exec("DROP TABLE IF EXISTS prediction_daily");
+  }
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS predictions (
       id TEXT PRIMARY KEY,
