@@ -414,7 +414,8 @@ export function createHeartbeat(
     );
     if (hasUrgent) return;
 
-    if (Date.now() - state.lastStudyTime < config.studyIntervalMs) return;
+    const studyInterval = freeLlm ? Math.min(config.studyIntervalMs, 1_800_000) : config.studyIntervalMs;
+    if (Date.now() - state.lastStudyTime < studyInterval) return;
 
     studying = true;
     emit({ type: "study", message: "Starting study session..." });
@@ -441,7 +442,7 @@ export function createHeartbeat(
   // --- Autonomous Prediction Research ---
 
   let lastPredictionTime = 0;
-  const PREDICTION_INTERVAL_MS = 1_800_000; // Research markets every 30 min (FREE via OpenRouter when available)
+  const PREDICTION_INTERVAL_MS = freeLlm ? 300_000 : 1_800_000; // Every 5 min when FREE, every 30 min when paid
 
   async function maybePredictionResearch() {
     if (!config.mcp) return;
