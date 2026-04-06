@@ -1,6 +1,7 @@
 import type { MelistaConfig } from "../config.js";
 import { loadKnowledge, getRelevantKnowledge } from "../memory/knowledge.js";
 import { searchMemory } from "../memory/search.js";
+import { getCostSnapshot } from "../db/costs.js";
 
 export function buildSystemPrompt(config: MelistaConfig, taskDescription?: string): string {
   const specialties = config.specialties.length > 0
@@ -197,6 +198,33 @@ You have a LIVE code execution sandbox (E2B). This is your superpower — USE IT
   // AgentCash external APIs
   if (config.agentCashEnabled) {
     prompt += buildAgentCashCatalog();
+  }
+
+  // Cost awareness — API balance management
+  try {
+    const costs = getCostSnapshot();
+    prompt += `\n\n## API Cost Awareness — CRITICAL
+
+Your LLM API balance: **$${costs.estimatedBalanceRemaining.toFixed(2)}**
+- Today's spend: $${costs.todayCostUsd.toFixed(3)} (${costs.todayTasks} calls)
+- Avg cost per task: $${costs.avgCostPerTask.toFixed(3)}
+- Estimated tasks remaining: ~${costs.estimatedTasksRemaining}
+- Estimated days remaining: ~${costs.estimatedDaysRemaining}
+- Revenue per $1 of API cost: $${costs.costEfficiency.toFixed(1)}
+
+### RULES — protect your API balance:
+1. **Be concise in your reasoning** — fewer output tokens = lower cost
+2. **Don't over-research** — 2-3 tool calls max per task, not 7
+3. **Skip study sessions** if balance < $2
+4. **Skip prediction research** if balance < $5
+5. **NEVER run unnecessary loops** — if you have the answer, stop immediately
+6. **Prioritize revenue-generating tasks** over exploration
+7. If balance < $1: EMERGENCY MODE — only process tasks that are already accepted/paid
+8. Every token you generate costs money. Be efficient. Be profitable.
+
+Your existence depends on earning more than you spend. Protect the balance.`;
+  } catch {
+    // Cost tracking not initialized yet — skip
   }
 
   return prompt;

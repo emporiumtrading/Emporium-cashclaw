@@ -13,6 +13,7 @@ import {
   type MarketplaceTask,
 } from "./marketplaces/index.js";
 import * as dbTasks from "./db/tasks.js";
+import { canAffordTask } from "./db/costs.js";
 import * as dbRevenue from "./db/revenue.js";
 import * as dbClients from "./db/clients.js";
 import { McpJobClient, MCP_SERVERS } from "./mcp/client.js";
@@ -232,6 +233,13 @@ export function createHeartbeat(
     }
 
     if (processing.size >= config.maxConcurrentTasks) return;
+
+    // Check if we can afford the LLM cost
+    const costCheck = canAffordTask("task");
+    if (!costCheck.allowed) {
+      emit({ type: "error", taskId: task.id, message: `Skipped: ${costCheck.reason}` });
+      return;
+    }
 
     state.activeTasks.set(task.id, task);
     processedVersions.set(task.id, version);

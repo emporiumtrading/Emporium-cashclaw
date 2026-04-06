@@ -23,6 +23,7 @@ import { agentcashBalance } from "./tools/agentcash.js";
 import * as cli from "./moltlaunch/cli.js";
 import { getDb, migrateFromJson } from "./db/index.js";
 import { initPredictionsTables, getOpenPositions, getAllPositions, getPredictionStats, getDailyPnl } from "./predictions/strategy.js";
+import { initCostTables, getCostSnapshot, setBudget } from "./db/costs.js";
 import * as dbSessions from "./db/sessions.js";
 import * as dbTasks from "./db/tasks.js";
 import * as dbRevenue from "./db/revenue.js";
@@ -84,6 +85,7 @@ export async function startAgent(): Promise<http.Server> {
   const database = getDb();
   migrateFromJson(database);
   initPredictionsTables();
+  initCostTables();
   dbSessions.cleanExpiredSessions();
 
   const configured = isConfigured();
@@ -413,6 +415,17 @@ function handleApi(
         repeat: dbClients.getRepeatClients(),
         total: dbClients.getClientCount(),
       });
+      break;
+
+    // --- API Costs ---
+
+    case "/api/costs":
+      json(res, getCostSnapshot());
+      break;
+
+    case "/api/costs/set-balance":
+      if (req.method !== "POST") { json(res, { error: "POST only" }, 405); break; }
+      handleSetBalance(req, res);
       break;
 
     // --- Predictions ---
@@ -1035,6 +1048,22 @@ async function handleFreelancerBids(res: http.ServerResponse, ctx: ServerContext
     json(res, { bids });
   } catch (err) {
     json(res, { bids: [], error: err instanceof Error ? err.message : "Failed" });
+  }
+}
+
+// --- Cost handlers ---
+
+async function handleSetBalance(req: http.IncomingMessage, res: http.ServerResponse) {
+  try {
+    const body = parseJsonBody<{ balance: number }>(await readBody(req));
+    if (typeof body.balance === "number" && body.balance >= 0) {
+      setBudget("api_balance", body.balance);
+      json(res, { ok: true, balance: body.balance });
+    } else {
+      json(res, { error: "Invalid balance" }, 400);
+    }
+  } catch (err) {
+    json(res, { error: err instanceof Error ? err.message : "Failed" }, 400);
   }
 }
 

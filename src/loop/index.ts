@@ -6,6 +6,7 @@ import type { MarketplaceAdapter } from "../marketplaces/types.js";
 import { getToolDefinitions, executeTool } from "../tools/registry.js";
 import { buildSystemPrompt } from "./prompt.js";
 import { buildTaskContext } from "./context.js";
+import { recordLlmUsage } from "../db/costs.js";
 
 const DEFAULT_MAX_TURNS = 10;
 
@@ -52,6 +53,9 @@ export async function runAgentLoop(
     const response: LLMResponse = await llm.chat(messages, tools);
     totalInputTokens += response.usage.inputTokens;
     totalOutputTokens += response.usage.outputTokens;
+
+    // Track cost
+    recordLlmUsage(response.usage.inputTokens, response.usage.outputTokens, "task", task.id);
 
     for (const block of response.content) {
       if (block.type === "text" && block.text.trim()) {

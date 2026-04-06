@@ -6,6 +6,7 @@ import {
   storeKnowledge,
   type KnowledgeEntry,
 } from "../memory/knowledge.js";
+import { recordLlmUsage, canAffordTask } from "../db/costs.js";
 
 export interface StudyResult {
   topic: KnowledgeEntry["topic"];
@@ -216,6 +217,12 @@ export async function runStudySession(
   llm: LLMProvider,
   config: MelistaConfig,
 ): Promise<StudyResult> {
+  // Check if we can afford a study session
+  const costCheck = canAffordTask("study");
+  if (!costCheck.allowed) {
+    return { topic: "cost_optimization" as KnowledgeEntry["topic"], insight: costCheck.reason ?? "Budget limit reached", tokensUsed: 0 };
+  }
+
   const feedback = loadFeedback();
   const knowledge = loadKnowledge();
   const topic = pickTopic(knowledge, feedback);
@@ -237,6 +244,7 @@ export async function runStudySession(
   for (let turn = 0; turn < MAX_STUDY_TURNS; turn++) {
     const response = await llm.chat(messages);
     totalTokens += response.usage.inputTokens + response.usage.outputTokens;
+    recordLlmUsage(response.usage.inputTokens, response.usage.outputTokens, "study");
 
     const textBlocks = response.content.filter(
       (b): b is { type: "text"; text: string } => b.type === "text",
