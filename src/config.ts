@@ -77,6 +77,7 @@ export interface MelistaConfig {
   revenueGoals?: RevenueGoals;
   auth?: AuthConfig;
   e2bApiKey?: string;
+  predictionBankroll?: number;
   mcp?: {
     upworkToken?: string;
     enableHimalayas?: boolean;

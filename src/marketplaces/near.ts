@@ -1,3 +1,4 @@
+import { getPricesSync } from "../db/prices.js";
 /**
  * NEAR AI Agent Market adapter.
  *
@@ -94,7 +95,7 @@ function normaliseStatus(s: string): MarketplaceTask["status"] {
 }
 
 function normaliseJob(job: NearJob): MarketplaceTask {
-  const nearPrice = 4; // approximate NEAR/USD
+  const nearPrice = getPricesSync().near;
   const budget = job.budget_amount ? parseFloat(job.budget_amount) : undefined;
   return {
     id: job.job_id,

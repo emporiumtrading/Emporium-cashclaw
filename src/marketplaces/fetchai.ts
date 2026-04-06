@@ -1,3 +1,4 @@
+import { getPricesSync } from "../db/prices.js";
 /**
  * Fetch.ai Agentverse adapter.
  *
@@ -76,7 +77,7 @@ function normaliseStatus(s: string): MarketplaceTask["status"] {
 }
 
 function normaliseTask(task: AgentverseTask): MarketplaceTask {
-  const fetPrice = 1.5; // approximate FET/USD
+  const fetPrice = getPricesSync().fet;
   return {
     id: task.task_id,
     marketplace: "fetchai",

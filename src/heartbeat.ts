@@ -14,7 +14,8 @@ import {
 } from "./marketplaces/index.js";
 import * as dbTasks from "./db/tasks.js";
 import { wasTaskProcessed } from "./db/tasks.js";
-import { canAffordTask } from "./db/costs.js";
+import { canAffordTask, getCostSnapshot as getCostSnap } from "./db/costs.js";
+import { ethToUsd as ethToUsdPrice } from "./db/prices.js";
 import { searchPredictionMarkets, placePredictionTrade } from "./tools/predictions.js";
 import * as dbRevenue from "./db/revenue.js";
 import * as dbClients from "./db/clients.js";
@@ -325,8 +326,8 @@ export function createHeartbeat(
     const priceEth = task.quotedPriceWei
       ? (parseInt(task.quotedPriceWei) / 1e18).toFixed(6)
       : "0";
-    const priceUsd = parseFloat(priceEth) * 2050; // approximate ETH/USD
-    const costUsd = 0.06; // LLM cost estimate per task
+    const priceUsd = ethToUsdPrice(parseFloat(priceEth));
+    const costUsd = getCostSnap().avgCostPerTask || 0.06;
 
     dbTasks.upsertTask({
       id: task.id,

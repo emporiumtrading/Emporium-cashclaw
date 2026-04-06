@@ -24,6 +24,7 @@ import * as cli from "./moltlaunch/cli.js";
 import { getDb, migrateFromJson } from "./db/index.js";
 import { initPredictionsTables, getOpenPositions, getAllPositions, getPredictionStats, getDailyPnl } from "./predictions/strategy.js";
 import { initCostTables, getCostSnapshot, setBudget } from "./db/costs.js";
+import { initPrices } from "./db/prices.js";
 import * as dbSessions from "./db/sessions.js";
 import * as dbTasks from "./db/tasks.js";
 import * as dbRevenue from "./db/revenue.js";
@@ -86,6 +87,7 @@ export async function startAgent(): Promise<http.Server> {
   migrateFromJson(database);
   initPredictionsTables();
   initCostTables();
+  await initPrices();
   dbSessions.cleanExpiredSessions();
 
   const configured = isConfigured();

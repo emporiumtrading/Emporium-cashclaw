@@ -84,7 +84,7 @@ export const placePredictionTrade: Tool = {
       required: ["market", "platform", "outcome", "confidence", "amount_usd", "entry_price", "thesis"],
     },
   },
-  async execute(input) {
+  async execute(input, ctx) {
     const market = input.market as string;
     const platform = input.platform as string;
     const outcome = input.outcome as string;
@@ -94,8 +94,8 @@ export const placePredictionTrade: Tool = {
     const thesis = input.thesis as string;
     const mode = (input.mode as string) ?? "paper";
 
-    // Risk check (applies to both paper and live)
-    const balance = mode === "live" ? 10 : 1000; // Paper gets virtual $1000
+    // Risk check — paper gets virtual $1000, live uses configured bankroll
+    const balance = mode === "live" ? (ctx.config.predictionBankroll ?? 10) : 1000;
     const check = canPlaceTrade(DEFAULT_PREDICTION_CONFIG, balance, amount, confidence);
     if (!check.allowed) {
       return { success: false, data: `Trade rejected: ${check.reason}` };

@@ -1,3 +1,4 @@
+import { ethToUsd } from "../db/prices.js";
 /**
  * Freelancer.com marketplace adapter.
  *
@@ -210,7 +211,7 @@ export function createFreelancerAdapter(flConfig: FreelancerConfig): Marketplace
 
       // If the LLM sent an ETH amount (< 1), convert to USD estimate
       if (amount < 1) {
-        amount = amount * 2050; // approximate ETH→USD
+        amount = ethToUsd(amount);
       }
 
       // Minimum bid on Freelancer.com is typically $10
