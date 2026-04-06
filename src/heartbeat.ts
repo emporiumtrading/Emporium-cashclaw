@@ -445,15 +445,15 @@ export function createHeartbeat(
   const PREDICTION_INTERVAL_MS = freeLlm ? 300_000 : 1_800_000; // Every 5 min when FREE, every 30 min when paid
 
   async function maybePredictionResearch() {
-    if (!config.mcp) return;
-    const mcpConfig = config.mcp as Record<string, unknown>;
-    if (!mcpConfig.enablePredictions && !mcpConfig.enableKalshi) return;
+    // Predictions run regardless of MCP — uses direct Polymarket API via tools
     if (studying || processing.size > 0) return;
     if (Date.now() - lastPredictionTime < PREDICTION_INTERVAL_MS) return;
 
-    // Check if we can afford it
-    const costCheck = canAffordTask("prediction");
-    if (!costCheck.allowed) return;
+    // Skip cost check when using free LLM — it's free
+    if (!freeLlm) {
+      const costCheck = canAffordTask("prediction");
+      if (!costCheck.allowed) return;
+    }
 
     lastPredictionTime = Date.now();
 
